@@ -32,10 +32,14 @@ export const Route = createRootRoute({
       { title: "Kasa — Portföy Takibi" },
       { name: "description", content: "Borsa portföyünüzü tek yerden takip edin" },
       { property: "og:title", content: "Kasa — Portföy Takibi" },
-      { property: "og:description", content: "Borsa portföyünüzü tek yerden, zahmetsizce takip edin" },
+      { property: "og:description", content: "Borsa portföyünüzü tek yerden takip edin" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Kasa — Portföy Takibi" },
+      { name: "twitter:description", content: "Borsa portföyünüzü tek yerden takip edin" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/484d0f78-52b3-49d3-bdbc-c21539f6d6dd/id-preview-0418406f--3e248b73-f2e8-4556-97d1-c461ead2ee8c.lovable.app-1776895756469.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/484d0f78-52b3-49d3-bdbc-c21539f6d6dd/id-preview-0418406f--3e248b73-f2e8-4556-97d1-c461ead2ee8c.lovable.app-1776895756469.png" },
     ],
     links: [
       {

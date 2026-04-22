@@ -9,31 +9,32 @@ export const fetchStockPrices = createServerFn({ method: 'POST' })
   .inputValidator((input: { symbols: string[] }) => inputSchema.parse(input))
   .handler(async ({ data }) => {
     const results: Record<string, number> = {};
-    const yahooSymbols = data.symbols.map(s => s.includes('.') ? s : s + '.IS');
-    const query = yahooSymbols.join(',');
 
     try {
-      const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(query)}&fields=regularMarketPrice,symbol`;
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-        },
+      const fetches = data.symbols.map(async (symbol) => {
+        const yahooSymbol = symbol.includes('.') ? symbol : symbol + '.IS';
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=1d&interval=1d`;
+        try {
+          const res = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+          });
+          if (!res.ok) {
+            console.error(`Yahoo chart error for ${yahooSymbol}: ${res.status}`);
+            return;
+          }
+          const json = await res.json();
+          const meta = json?.chart?.result?.[0]?.meta;
+          if (meta?.regularMarketPrice) {
+            results[symbol] = meta.regularMarketPrice;
+          }
+        } catch (e) {
+          console.error(`Failed to fetch ${yahooSymbol}:`, e);
+        }
       });
 
-      if (!res.ok) {
-        console.error(`Yahoo Finance API error: ${res.status}`);
-        return { prices: results, error: `Yahoo Finance API returned ${res.status}` };
-      }
-
-      const json = await res.json();
-      const quotes = json?.quoteResponse?.result || [];
-
-      for (const quote of quotes) {
-        const originalSymbol = quote.symbol?.replace('.IS', '') || '';
-        if (quote.regularMarketPrice && originalSymbol) {
-          results[originalSymbol] = quote.regularMarketPrice;
-        }
-      }
+      await Promise.all(fetches);
 
       return { prices: results, error: null };
     } catch (err) {

@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      price_cache: {
+        Row: {
+          id: string
+          price: number
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          price: number
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          price?: number
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          broker: string | null
+          commission: number | null
+          created_at: string
+          date: string
+          gross_amount: number | null
+          id: string
+          price: number | null
+          qty: number | null
+          symbol: string
+          tax_pct: number | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          broker?: string | null
+          commission?: number | null
+          created_at?: string
+          date: string
+          gross_amount?: number | null
+          id?: string
+          price?: number | null
+          qty?: number | null
+          symbol: string
+          tax_pct?: number | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          broker?: string | null
+          commission?: number | null
+          created_at?: string
+          date?: string
+          gross_amount?: number | null
+          id?: string
+          price?: number | null
+          qty?: number | null
+          symbol?: string
+          tax_pct?: number | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

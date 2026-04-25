@@ -8,10 +8,14 @@ import { HoldingsView } from './HoldingsView';
 import { TransactionsView } from './TransactionsView';
 import { AnalyticsView } from './AnalyticsView';
 import { TransactionModal } from './TransactionModal';
+import { MetalsView } from './MetalsView';
+import { MetalModal } from './MetalModal';
 import { fetchStockPrices } from '@/lib/yahoo-finance.functions';
+import { fetchMetalPrices, calculateMetalPositions } from '@/lib/metals';
+import type { MetalHolding, MetalPrices } from '@/lib/metals';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-type Tab = 'holdings' | 'analytics' | 'transactions';
+type Tab = 'holdings' | 'metals' | 'analytics' | 'transactions';
 
 export function Dashboard() {
   const { user, profileName, signOut } = useAuth();
@@ -22,6 +26,11 @@ export function Dashboard() {
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [metalHoldings, setMetalHoldings] = useState<MetalHolding[]>([]);
+  const [metalPrices, setMetalPrices] = useState<MetalPrices>({ gold: undefined, silver: undefined, platinum: undefined, palladium: undefined });
+  const [metalsStale, setMetalsStale] = useState(false);
+  const [metalModalOpen, setMetalModalOpen] = useState(false);
+  const [editMetal, setEditMetal] = useState<MetalHolding | null>(null);
 
   const userId = user?.id || '';
 
@@ -44,12 +53,36 @@ export function Dashboard() {
       for (const c of cached) p[c.symbol] = c.price;
       setPrices(p);
     }
+
+    const { data: metals } = await supabase
+      .from('metal_holdings')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (metals) setMetalHoldings(metals as MetalHolding[]);
   }, [userId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Fetch metal prices on mount
+  const refreshMetalPrices = useCallback(async () => {
+    try {
+      const p = await fetchMetalPrices();
+      setMetalPrices(p);
+      setMetalsStale(false);
+    } catch (err) {
+      console.error('Metal price fetch error:', err);
+      setMetalsStale(true);
+    }
+  }, []);
+
+  useEffect(() => { refreshMetalPrices(); }, [refreshMetalPrices]);
+
   const positions = calculatePortfolio(transactions, prices);
   const totalDividend = getTotalDividend(transactions);
+  const metalPositions = calculateMetalPositions(metalHoldings, metalPrices);
+  const metalsValue = metalPositions.reduce((s, p) => s + p.currentValue, 0);
+  const metalsPnl = metalPositions.reduce((s, p) => s + p.pnl, 0);
 
   // Save transaction
   const handleSaveTx = async (tx: Omit<Transaction, 'id' | 'user_id'>) => {
@@ -87,25 +120,62 @@ export function Dashboard() {
   // Refresh prices from Yahoo Finance
   const handleRefresh = async () => {
     const symbols = [...new Set(transactions.filter(t => t.type !== 'div').map(t => t.symbol))];
-    if (symbols.length === 0) return;
     setRefreshing(true);
     try {
-      const result = await fetchStockPrices({ data: { symbols } });
-      if (result.prices && Object.keys(result.prices).length > 0) {
-        const newPrices = { ...prices, ...result.prices };
-        setPrices(newPrices);
-        // Upsert to cache
-        const rows = Object.entries(result.prices).map(([symbol, price]) => ({
-          user_id: userId, symbol, price, updated_at: new Date().toISOString()
-        }));
-        for (const row of rows) {
-          await supabase.from('price_cache').upsert(row, { onConflict: 'user_id,symbol' });
+      if (symbols.length > 0) {
+        const result = await fetchStockPrices({ data: { symbols } });
+        if (result.prices && Object.keys(result.prices).length > 0) {
+          const newPrices = { ...prices, ...result.prices };
+          setPrices(newPrices);
+          const rows = Object.entries(result.prices).map(([symbol, price]) => ({
+            user_id: userId, symbol, price, updated_at: new Date().toISOString()
+          }));
+          for (const row of rows) {
+            await supabase.from('price_cache').upsert(row, { onConflict: 'user_id,symbol' });
+          }
         }
       }
+      await refreshMetalPrices();
     } catch (err) {
       console.error('Price refresh error:', err);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  // Save / delete metal holding
+  const handleSaveMetal = async (h: Omit<MetalHolding, 'id' | 'user_id' | 'created_at'>) => {
+    if (editMetal) {
+      await supabase.from('metal_holdings').update({ ...h }).eq('id', editMetal.id);
+    } else {
+      await supabase.from('metal_holdings').insert({ ...h, user_id: userId });
+    }
+    setMetalModalOpen(false);
+    setEditMetal(null);
+    loadData();
+  };
+
+  const handleDeleteMetal = async () => {
+    if (editMetal) {
+      await supabase.from('metal_holdings').delete().eq('id', editMetal.id);
+      setMetalModalOpen(false);
+      setEditMetal(null);
+      loadData();
+    }
+  };
+
+  const handleEditMetal = (id: string) => {
+    const m = metalHoldings.find((x) => x.id === id);
+    if (m) { setEditMetal(m); setMetalModalOpen(true); }
+  };
+
+  const handleFabClick = () => {
+    if (tab === 'metals') {
+      setEditMetal(null);
+      setMetalModalOpen(true);
+    } else {
+      setEditTx(null);
+      setModalOpen(true);
     }
   };
 

@@ -36,15 +36,15 @@ export function AuthScreen() {
       <div className="w-full max-w-sm">
         <div className="mb-3">
           <img
-            src="/wordmark-dark.png"
-            srcSet="/wordmark-dark.png 1x, /wordmark-dark@2x.png 2x"
-            alt="Bikasa.me"
+            src="/wordmark-light.png"
+            srcSet="/wordmark-light.png 1x, /wordmark-light@2x.png 2x"
+            alt="Kasa"
             className="h-10 w-auto dark:hidden"
           />
           <img
-            src="/wordmark-light.png"
-            srcSet="/wordmark-light.png 1x, /wordmark-light@2x.png 2x"
-            alt="Bikasa.me"
+            src="/wordmark-dark.png"
+            srcSet="/wordmark-dark.png 1x, /wordmark-dark@2x.png 2x"
+            alt="Kasa"
             className="hidden h-10 w-auto dark:block"
           />
         </div>

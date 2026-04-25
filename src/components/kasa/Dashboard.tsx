@@ -32,6 +32,7 @@ export function Dashboard() {
   const [metalsStale, setMetalsStale] = useState(false);
   const [metalModalOpen, setMetalModalOpen] = useState(false);
   const [editMetal, setEditMetal] = useState<MetalHolding | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const userId = user?.id || '';
 
@@ -71,13 +72,93 @@ export function Dashboard() {
       const p = await fetchMetalPrices();
       setMetalPrices(p);
       setMetalsStale(false);
+      return true;
     } catch (err) {
       console.error('Metal price fetch error:', err);
       setMetalsStale(true);
+      return false;
     }
   }, []);
 
-  useEffect(() => { refreshMetalPrices(); }, [refreshMetalPrices]);
+  // Refresh stock prices (silent). Returns true on success.
+  const refreshStockPrices = useCallback(async () => {
+    const symbols = [...new Set(transactions.filter((t) => t.type !== 'div').map((t) => t.symbol))];
+    if (symbols.length === 0) return true;
+    try {
+      const result = await fetchStockPrices({ data: { symbols } });
+      if (result.prices && Object.keys(result.prices).length > 0) {
+        setPrices((prev) => ({ ...prev, ...result.prices }));
+        const rows = Object.entries(result.prices).map(([symbol, price]) => ({
+          user_id: userId, symbol, price, updated_at: new Date().toISOString(),
+        }));
+        for (const row of rows) {
+          await supabase.from('price_cache').upsert(row, { onConflict: 'user_id,symbol' });
+        }
+      }
+      if (result.changes) {
+        setStockChanges((prev) => ({ ...prev, ...result.changes }));
+      }
+      return true;
+    } catch (err) {
+      console.error('Stock price refresh error:', err);
+      return false;
+    }
+  }, [transactions, userId]);
+
+  // Is BIST open right now? Mon-Fri 10:00-18:00 Istanbul time.
+  const isBistOpen = useCallback(() => {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Istanbul',
+      weekday: 'short',
+      hour: 'numeric',
+      hour12: false,
+    });
+    const parts = fmt.formatToParts(new Date());
+    const wd = parts.find((p) => p.type === 'weekday')?.value ?? '';
+    const hourStr = parts.find((p) => p.type === 'hour')?.value ?? '0';
+    const hour = parseInt(hourStr, 10);
+    const isWeekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(wd);
+    return isWeekday && hour >= 10 && hour < 18;
+  }, []);
+
+  // Silent auto-refresh: metals always, stocks only during BIST hours.
+  const autoRefresh = useCallback(async () => {
+    const tasks: Promise<boolean>[] = [refreshMetalPrices()];
+    if (isBistOpen()) tasks.push(refreshStockPrices());
+    const results = await Promise.all(tasks);
+    if (results.some((ok) => ok)) setLastUpdated(new Date());
+  }, [refreshMetalPrices, refreshStockPrices, isBistOpen]);
+
+  // Initial fetch + 5min interval + visibility handling
+  useEffect(() => {
+    if (!userId) return;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const start = () => {
+      if (intervalId) return;
+      intervalId = setInterval(autoRefresh, 5 * 60 * 1000);
+    };
+    const stop = () => {
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    };
+
+    autoRefresh();
+    start();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        autoRefresh();
+        start();
+      } else {
+        stop();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [autoRefresh, userId]);
 
   const positions = calculatePortfolio(transactions, prices);
   const totalDividend = getTotalDividend(transactions);
@@ -132,26 +213,10 @@ export function Dashboard() {
 
   // Refresh prices from Yahoo Finance
   const handleRefresh = async () => {
-    const symbols = [...new Set(transactions.filter(t => t.type !== 'div').map(t => t.symbol))];
     setRefreshing(true);
     try {
-      if (symbols.length > 0) {
-        const result = await fetchStockPrices({ data: { symbols } });
-        if (result.prices && Object.keys(result.prices).length > 0) {
-          const newPrices = { ...prices, ...result.prices };
-          setPrices(newPrices);
-          const rows = Object.entries(result.prices).map(([symbol, price]) => ({
-            user_id: userId, symbol, price, updated_at: new Date().toISOString()
-          }));
-          for (const row of rows) {
-            await supabase.from('price_cache').upsert(row, { onConflict: 'user_id,symbol' });
-          }
-        }
-        if (result.changes) {
-          setStockChanges((prev) => ({ ...prev, ...result.changes }));
-        }
-      }
-      await refreshMetalPrices();
+      const [stockOk, metalOk] = await Promise.all([refreshStockPrices(), refreshMetalPrices()]);
+      if (stockOk || metalOk) setLastUpdated(new Date());
     } catch (err) {
       console.error('Price refresh error:', err);
     } finally {
@@ -261,6 +326,7 @@ export function Dashboard() {
               pricesStale={metalsStale}
               onAddFirst={() => { setEditMetal(null); setMetalModalOpen(true); }}
               onEdit={handleEditMetal}
+              lastUpdated={lastUpdated}
             />
           )}
           {tab === 'analytics' && (

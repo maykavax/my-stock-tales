@@ -1,6 +1,19 @@
 import { fmt } from '@/lib/portfolio';
 import type { Position } from '@/lib/portfolio';
 
+const MOTIVATION_LOW = ['Güzel gidiyor.', 'İyi seyirde.', 'İstikrarlı adımlar.'];
+const MOTIVATION_MID = ['Fena değil ortak.', 'Portföyün formda.', 'Böyle devam.'];
+const MOTIVATION_HIGH = ['Harika gidiyorsun.', 'Büyük gün.', 'Tebrikler!'];
+
+function pickMotivation(pct: number): string | null {
+  let pool: string[] | null = null;
+  if (pct > 10) pool = MOTIVATION_HIGH;
+  else if (pct > 5) pool = MOTIVATION_MID;
+  else if (pct > 2) pool = MOTIVATION_LOW;
+  if (!pool) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 interface Props {
   positions: Position[];
   totalDividend: number;

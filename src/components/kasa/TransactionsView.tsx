@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { fmt, fmtInt } from '@/lib/portfolio';
 import type { Transaction } from '@/lib/portfolio';
 import type { MetalTransaction } from '@/lib/metals';
@@ -9,21 +8,22 @@ interface Props {
   metalTxs: MetalTransaction[];
   onEdit: (id: string) => void;
   onEditMetal: (id: string) => void;
+  activeSubTab: 'stocks' | 'metals';
+  onSubTabChange: (s: 'stocks' | 'metals') => void;
 }
 
 type SubTab = 'stocks' | 'metals';
 
-export function TransactionsView({ transactions, metalTxs, onEdit, onEditMetal }: Props) {
-  const [sub, setSub] = useState<SubTab>('stocks');
-
+export function TransactionsView({ transactions, metalTxs, onEdit, onEditMetal, activeSubTab, onSubTabChange }: Props) {
+  const sub = activeSubTab;
   const subClass = (t: SubTab) =>
     `flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors ${sub === t ? 'bg-primary text-primary-foreground' : 'text-kasa-text2'}`;
 
   return (
     <div className="space-y-4">
       <div className="flex gap-1 rounded-xl bg-kasa-surface2 p-1">
-        <button className={subClass('stocks')} onClick={() => setSub('stocks')}>Hisseler</button>
-        <button className={subClass('metals')} onClick={() => setSub('metals')}>Metaller</button>
+        <button className={subClass('stocks')} onClick={() => onSubTabChange('stocks')}>Hisseler</button>
+        <button className={subClass('metals')} onClick={() => onSubTabChange('metals')}>Metaller</button>
       </div>
 
       {sub === 'stocks' ? (

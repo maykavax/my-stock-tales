@@ -1,12 +1,11 @@
 import { fmt } from '@/lib/portfolio';
 import type { Position } from '@/lib/portfolio';
 import type { MetalGroup } from '@/lib/metals';
-import { groupMetalPositions, METAL_SHORT } from '@/lib/metals';
-import type { MetalPosition } from '@/lib/metals';
+import { METAL_SHORT } from '@/lib/metals';
 
 interface Props {
   positions: Position[];
-  metalPositions: MetalPosition[];
+  metalGroups: MetalGroup[];
   onAddFirst?: () => void;
 }
 
@@ -86,15 +85,15 @@ function ChartCard({ title, segments, total, size }: { title: string; segments: 
   );
 }
 
-export function AnalyticsView({ positions, metalPositions, onAddFirst }: Props) {
+export function AnalyticsView({ positions, metalGroups, onAddFirst }: Props) {
   const openStocks = positions.filter((p) => p.openQty > 0);
   const stocksValue = openStocks.reduce((s, p) => s + p.openValue, 0);
 
-  const metalGroups: MetalGroup[] = groupMetalPositions(metalPositions.filter((p) => p.grams > 0));
-  const metalsValue = metalGroups.reduce((s, g) => s + g.currentValue, 0);
+  const openMetals = metalGroups.filter((g) => g.totalGrams > 0);
+  const metalsValue = openMetals.reduce((s, g) => s + g.currentValue, 0);
 
   const hasStocks = openStocks.length > 0 && stocksValue > 0;
-  const hasMetals = metalGroups.length > 0 && metalsValue > 0;
+  const hasMetals = openMetals.length > 0 && metalsValue > 0;
 
   if (!hasStocks && !hasMetals) {
     return (
@@ -124,7 +123,7 @@ export function AnalyticsView({ positions, metalPositions, onAddFirst }: Props) 
     }))
     .sort((a, b) => b.value - a.value);
 
-  const metalSegments: Segment[] = metalGroups
+  const metalSegments: Segment[] = openMetals
     .map((g, i) => ({
       label: METAL_SHORT[g.metal_type],
       value: g.currentValue,

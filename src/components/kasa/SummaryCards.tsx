@@ -5,15 +5,20 @@ interface Props {
   positions: Position[];
   totalDividend: number;
   hasTransactions: boolean;
+  metalsValue?: number;
+  metalsPnl?: number;
 }
 
-export function SummaryCards({ positions, totalDividend, hasTransactions }: Props) {
-  const totalValue = positions.reduce((s, p) => s + p.openValue, 0);
+export function SummaryCards({ positions, totalDividend, hasTransactions, metalsValue = 0, metalsPnl = 0 }: Props) {
+  const stocksValue = positions.reduce((s, p) => s + p.openValue, 0);
   const totalCost = positions.reduce((s, p) => s + p.openCost, 0);
-  const unrealizedPnl = positions.reduce((s, p) => s + p.unrealizedPnl, 0);
+  const stocksPnl = positions.reduce((s, p) => s + p.unrealizedPnl, 0);
+  const totalValue = stocksValue + metalsValue;
+  const unrealizedPnl = stocksPnl + metalsPnl;
   const realizedPnl = positions.reduce((s, p) => s + p.realizedPnl, 0);
   const openPositions = positions.filter(p => p.openQty > 0).length;
   const totalPct = totalCost > 0 ? (unrealizedPnl / totalCost * 100) : 0;
+  const hasAny = hasTransactions || metalsValue > 0;
 
   return (
     <div className="space-y-4">
@@ -21,7 +26,7 @@ export function SummaryCards({ positions, totalDividend, hasTransactions }: Prop
       <div className="rounded-2xl border border-border bg-kasa-surface p-5">
         <p className="text-xs text-kasa-text2">Toplam Portföy Değeri</p>
         <p className="mt-1 font-mono text-3xl font-bold text-foreground">{fmt(totalValue)}₺</p>
-        {!hasTransactions ? (
+        {!hasAny ? (
           <p className="mt-1 text-xs text-kasa-text2">— henüz işlem yok</p>
         ) : (
           <p className={`mt-1 text-xs font-mono ${unrealizedPnl >= 0 ? 'text-kasa-green' : 'text-kasa-red'}`}>

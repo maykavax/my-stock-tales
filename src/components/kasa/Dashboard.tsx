@@ -183,7 +183,7 @@ export function Dashboard() {
     `flex-1 py-2.5 text-center text-xs font-semibold transition-colors ${tab === t ? 'text-primary border-b-2 border-primary' : 'text-kasa-text2'}`;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center">

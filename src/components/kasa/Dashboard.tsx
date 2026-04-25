@@ -263,7 +263,13 @@ export function Dashboard() {
               onEdit={handleEditMetal}
             />
           )}
-          {tab === 'analytics' && <AnalyticsView positions={positions} />}
+          {tab === 'analytics' && (
+            <AnalyticsView
+              positions={positions}
+              metalPositions={metalPositions}
+              onAddFirst={handleFabClick}
+            />
+          )}
           {tab === 'transactions' && <TransactionsView transactions={transactions} onEdit={handleEdit} />}
         </div>
       </main>

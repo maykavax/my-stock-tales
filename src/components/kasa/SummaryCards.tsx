@@ -1,6 +1,19 @@
 import { fmt } from '@/lib/portfolio';
 import type { Position } from '@/lib/portfolio';
 
+const MOTIVATION_LOW = ['Güzel gidiyor.', 'İyi seyirde.', 'İstikrarlı adımlar.'];
+const MOTIVATION_MID = ['Fena değil ortak.', 'Portföyün formda.', 'Böyle devam.'];
+const MOTIVATION_HIGH = ['Harika gidiyorsun.', 'Büyük gün.', 'Tebrikler!'];
+
+function pickMotivation(pct: number): string | null {
+  let pool: string[] | null = null;
+  if (pct > 10) pool = MOTIVATION_HIGH;
+  else if (pct > 5) pool = MOTIVATION_MID;
+  else if (pct > 2) pool = MOTIVATION_LOW;
+  if (!pool) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 interface Props {
   positions: Position[];
   totalDividend: number;
@@ -21,6 +34,7 @@ export function SummaryCards({ positions, totalDividend, hasTransactions, metals
   const hasAny = hasTransactions || metalsValue > 0;
   const prevTotal = totalValue - dailyChange;
   const dailyPct = prevTotal > 0 ? (dailyChange / prevTotal) * 100 : 0;
+  const motivation = hasAny ? pickMotivation(totalPct) : null;
 
   return (
     <div className="space-y-4">
@@ -34,6 +48,9 @@ export function SummaryCards({ positions, totalDividend, hasTransactions, metals
           <p className={`mt-1 text-xs font-mono ${unrealizedPnl >= 0 ? 'text-kasa-green' : 'text-kasa-red'}`}>
             {unrealizedPnl >= 0 ? '▲' : '▼'} {fmt(Math.abs(unrealizedPnl))} ₺ ({unrealizedPnl >= 0 ? '+' : '-'}{fmt(Math.abs(totalPct))}%)
           </p>
+        )}
+        {motivation && (
+          <p className="mt-2 text-xs italic text-kasa-text2/80">{motivation}</p>
         )}
       </div>
 

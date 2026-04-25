@@ -21,6 +21,7 @@ export function SummaryCards({ positions, totalDividend, hasTransactions, metals
   const hasAny = hasTransactions || metalsValue > 0;
   const prevTotal = totalValue - dailyChange;
   const dailyPct = prevTotal > 0 ? (dailyChange / prevTotal) * 100 : 0;
+  const motivation = hasAny ? pickMotivation(totalPct) : null;
 
   return (
     <div className="space-y-4">
@@ -34,6 +35,9 @@ export function SummaryCards({ positions, totalDividend, hasTransactions, metals
           <p className={`mt-1 text-xs font-mono ${unrealizedPnl >= 0 ? 'text-kasa-green' : 'text-kasa-red'}`}>
             {unrealizedPnl >= 0 ? '▲' : '▼'} {fmt(Math.abs(unrealizedPnl))} ₺ ({unrealizedPnl >= 0 ? '+' : '-'}{fmt(Math.abs(totalPct))}%)
           </p>
+        )}
+        {motivation && (
+          <p className="mt-2 text-xs italic text-kasa-text2/80">{motivation}</p>
         )}
       </div>
 

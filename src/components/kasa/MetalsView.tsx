@@ -8,9 +8,10 @@ interface Props {
   pricesStale: boolean;
   onAddFirst: () => void;
   onEdit: (id: string) => void;
+  lastUpdated?: Date | null;
 }
 
-export function MetalsView({ positions, pricesStale, onAddFirst, onEdit }: Props) {
+export function MetalsView({ positions, pricesStale, onAddFirst, onEdit, lastUpdated }: Props) {
   const groups = groupMetalPositions(positions);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const totalValue = positions.reduce((s, p) => s + p.currentValue, 0);
@@ -138,6 +139,11 @@ export function MetalsView({ positions, pricesStale, onAddFirst, onEdit }: Props
         })}
       <p className="px-1 pt-1 text-[10px] text-kasa-text2">
         Veri kaynağı: finans.truncgil.com
+        {lastUpdated && (
+          <span className="ml-2 opacity-70">
+            · Son güncelleme: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
       </p>
     </div>
   );

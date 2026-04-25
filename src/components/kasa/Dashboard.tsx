@@ -220,17 +220,32 @@ export function Dashboard() {
 
       {/* Content */}
       <main className="mx-auto max-w-lg px-4 py-4">
-        <SummaryCards positions={positions} totalDividend={totalDividend} hasTransactions={transactions.length > 0} />
+        <SummaryCards
+          positions={positions}
+          totalDividend={totalDividend}
+          hasTransactions={transactions.length > 0}
+          metalsValue={metalsValue}
+          metalsPnl={metalsPnl}
+        />
 
         {/* Tabs */}
         <div className="mt-6 flex border-b border-border">
           <button className={tabClass('holdings')} onClick={() => setTab('holdings')}>Portföy</button>
+          <button className={tabClass('metals')} onClick={() => setTab('metals')}>Metaller</button>
           <button className={tabClass('analytics')} onClick={() => setTab('analytics')}>Analiz</button>
           <button className={tabClass('transactions')} onClick={() => setTab('transactions')}>İşlemler</button>
         </div>
 
         <div className="mt-4 pb-24">
           {tab === 'holdings' && <HoldingsView positions={positions} onAddFirst={() => setModalOpen(true)} />}
+          {tab === 'metals' && (
+            <MetalsView
+              positions={metalPositions}
+              pricesStale={metalsStale}
+              onAddFirst={() => { setEditMetal(null); setMetalModalOpen(true); }}
+              onEdit={handleEditMetal}
+            />
+          )}
           {tab === 'analytics' && <AnalyticsView positions={positions} />}
           {tab === 'transactions' && <TransactionsView transactions={transactions} onEdit={handleEdit} />}
         </div>
@@ -238,7 +253,7 @@ export function Dashboard() {
 
       {/* FAB */}
       <button
-        onClick={() => { setEditTx(null); setModalOpen(true); }}
+        onClick={handleFabClick}
         className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-lg transition-transform hover:scale-105"
       >
         +
@@ -251,6 +266,15 @@ export function Dashboard() {
         onSave={handleSaveTx}
         onDelete={handleDeleteTx}
         editTx={editTx}
+      />
+
+      {/* Metal Modal */}
+      <MetalModal
+        open={metalModalOpen}
+        onClose={() => { setMetalModalOpen(false); setEditMetal(null); }}
+        onSave={handleSaveMetal}
+        onDelete={handleDeleteMetal}
+        editHolding={editMetal}
       />
 
       {/* Profile Modal */}

@@ -107,6 +107,53 @@ export function calculateMetalPositions(
   });
 }
 
+export interface MetalGroup {
+  metal_type: MetalType;
+  totalGrams: number;
+  weightedAvgCost: number;
+  totalCost: number;
+  currentPrice: number;
+  currentValue: number;
+  pnl: number;
+  pnlPct: number;
+  dailyChange: number;
+  hasPrice: boolean;
+  lots: MetalPosition[];
+}
+
+export function groupMetalPositions(positions: MetalPosition[]): MetalGroup[] {
+  const map = new Map<MetalType, MetalPosition[]>();
+  for (const p of positions) {
+    const arr = map.get(p.metal_type) ?? [];
+    arr.push(p);
+    map.set(p.metal_type, arr);
+  }
+  const groups: MetalGroup[] = [];
+  map.forEach((lots, metal_type) => {
+    const totalGrams = lots.reduce((s, l) => s + l.grams, 0);
+    const totalCost = lots.reduce((s, l) => s + l.totalCost, 0);
+    const weightedAvgCost = totalGrams > 0 ? totalCost / totalGrams : 0;
+    const currentPrice = lots[0].currentPrice;
+    const currentValue = totalGrams * currentPrice;
+    const pnl = currentValue - totalCost;
+    const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+    groups.push({
+      metal_type,
+      totalGrams,
+      weightedAvgCost,
+      totalCost,
+      currentPrice,
+      currentValue,
+      pnl,
+      pnlPct,
+      dailyChange: lots[0].dailyChange,
+      hasPrice: lots.every((l) => l.hasPrice),
+      lots: lots.slice().sort((a, b) => b.grams - a.grams),
+    });
+  });
+  return groups;
+}
+
 export function fmtGrams(n: number): string {
   return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
 }

@@ -118,15 +118,15 @@ export function Dashboard() {
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center">
           <img
-            src="/wordmark-light.png"
-            srcSet="/wordmark-light.png 1x, /wordmark-light@2x.png 2x"
-            alt="Kasa"
+            src="/wordmark-on-light.png"
+            srcSet="/wordmark-on-light.png 1x, /wordmark-on-light@2x.png 2x"
+            alt="bikasa.me"
             className="h-7 w-auto dark:hidden"
           />
           <img
-            src="/wordmark-dark.png"
-            srcSet="/wordmark-dark.png 1x, /wordmark-dark@2x.png 2x"
-            alt="Kasa"
+            src="/wordmark-on-dark.png"
+            srcSet="/wordmark-on-dark.png 1x, /wordmark-on-dark@2x.png 2x"
+            alt="bikasa.me"
             className="hidden h-7 w-auto dark:block"
           />
         </div>

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      metal_holdings: {
+        Row: {
+          avg_cost_try: number
+          created_at: string
+          grams: number
+          id: string
+          metal_type: Database["public"]["Enums"]["metal_type"]
+          purchase_source: string | null
+          user_id: string
+        }
+        Insert: {
+          avg_cost_try: number
+          created_at?: string
+          grams: number
+          id?: string
+          metal_type: Database["public"]["Enums"]["metal_type"]
+          purchase_source?: string | null
+          user_id: string
+        }
+        Update: {
+          avg_cost_try?: number
+          created_at?: string
+          grams?: number
+          id?: string
+          metal_type?: Database["public"]["Enums"]["metal_type"]
+          purchase_source?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       price_cache: {
         Row: {
           id: string
@@ -109,7 +139,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      metal_type: "gold" | "silver" | "platinum" | "palladium"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -236,6 +266,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      metal_type: ["gold", "silver", "platinum", "palladium"],
+    },
   },
 } as const

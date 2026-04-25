@@ -11,8 +11,8 @@ import { TransactionModal } from './TransactionModal';
 import { MetalsView } from './MetalsView';
 import { MetalModal } from './MetalModal';
 import { fetchStockPrices } from '@/lib/yahoo-finance.functions';
-import { fetchMetalPrices, calculateMetalPositions } from '@/lib/metals';
-import type { MetalHolding, MetalPrices } from '@/lib/metals';
+import { fetchMetalPrices, calculateMetalGroups } from '@/lib/metals';
+import type { MetalTransaction, MetalPrices } from '@/lib/metals';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 type Tab = 'holdings' | 'metals' | 'analytics' | 'transactions';
@@ -27,16 +27,18 @@ export function Dashboard() {
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [metalHoldings, setMetalHoldings] = useState<MetalHolding[]>([]);
+  const [metalTxs, setMetalTxs] = useState<MetalTransaction[]>([]);
   const [metalPrices, setMetalPrices] = useState<MetalPrices>({ gold: undefined, silver: undefined, platinum: undefined, palladium: undefined });
   const [metalsStale, setMetalsStale] = useState(false);
   const [metalModalOpen, setMetalModalOpen] = useState(false);
-  const [editMetal, setEditMetal] = useState<MetalHolding | null>(null);
+  const [editMetalTx, setEditMetalTx] = useState<MetalTransaction | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  // Tracks which sub-tab the user last chose inside the Transactions tab,
+  // so the FAB opens the right modal (stock vs metal).
+  const [txSubTab, setTxSubTab] = useState<'stocks' | 'metals'>('stocks');
 
   const userId = user?.id || '';
 
-  // Load transactions
   const loadData = useCallback(async () => {
     if (!userId) return;
     const { data: txs } = await supabase
@@ -57,16 +59,15 @@ export function Dashboard() {
     }
 
     const { data: metals } = await supabase
-      .from('metal_holdings')
+      .from('metal_transactions')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-    if (metals) setMetalHoldings(metals as MetalHolding[]);
+      .order('date', { ascending: false });
+    if (metals) setMetalTxs(metals as MetalTransaction[]);
   }, [userId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Fetch metal prices on mount
   const refreshMetalPrices = useCallback(async () => {
     try {
       const p = await fetchMetalPrices();
@@ -80,7 +81,6 @@ export function Dashboard() {
     }
   }, []);
 
-  // Refresh stock prices (silent). Returns true on success.
   const refreshStockPrices = useCallback(async () => {
     const symbols = [...new Set(transactions.filter((t) => t.type !== 'div').map((t) => t.symbol))];
     if (symbols.length === 0) return true;
@@ -105,13 +105,9 @@ export function Dashboard() {
     }
   }, [transactions, userId]);
 
-  // Is BIST open right now? Mon-Fri 10:00-18:00 Istanbul time.
   const isBistOpen = useCallback(() => {
     const fmt = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Istanbul',
-      weekday: 'short',
-      hour: 'numeric',
-      hour12: false,
+      timeZone: 'Europe/Istanbul', weekday: 'short', hour: 'numeric', hour12: false,
     });
     const parts = fmt.formatToParts(new Date());
     const wd = parts.find((p) => p.type === 'weekday')?.value ?? '';
@@ -121,7 +117,6 @@ export function Dashboard() {
     return isWeekday && hour >= 10 && hour < 18;
   }, []);
 
-  // Silent auto-refresh: metals always, stocks only during BIST hours.
   const autoRefresh = useCallback(async () => {
     const tasks: Promise<boolean>[] = [refreshMetalPrices()];
     if (isBistOpen()) tasks.push(refreshStockPrices());
@@ -129,29 +124,18 @@ export function Dashboard() {
     if (results.some((ok) => ok)) setLastUpdated(new Date());
   }, [refreshMetalPrices, refreshStockPrices, isBistOpen]);
 
-  // Initial fetch + 5min interval + visibility handling
   useEffect(() => {
     if (!userId) return;
     let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    const start = () => {
-      if (intervalId) return;
-      intervalId = setInterval(autoRefresh, 5 * 60 * 1000);
-    };
-    const stop = () => {
-      if (intervalId) { clearInterval(intervalId); intervalId = null; }
-    };
+    const start = () => { if (!intervalId) intervalId = setInterval(autoRefresh, 5 * 60 * 1000); };
+    const stop = () => { if (intervalId) { clearInterval(intervalId); intervalId = null; } };
 
     autoRefresh();
     start();
 
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        autoRefresh();
-        start();
-      } else {
-        stop();
-      }
+      if (document.visibilityState === 'visible') { autoRefresh(); start(); }
+      else stop();
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
@@ -162,29 +146,27 @@ export function Dashboard() {
 
   const positions = calculatePortfolio(transactions, prices);
   const totalDividend = getTotalDividend(transactions);
-  const metalPositions = calculateMetalPositions(metalHoldings, metalPrices);
-  const metalsValue = metalPositions.reduce((s, p) => s + p.currentValue, 0);
-  const metalsPnl = metalPositions.reduce((s, p) => s + p.pnl, 0);
+  const metalGroups = calculateMetalGroups(metalTxs, metalPrices);
+  const metalsValue = metalGroups.reduce((s, g) => s + g.currentValue, 0);
+  const metalsPnl = metalGroups.reduce((s, g) => s + g.pnl, 0);
+  const metalsRealizedPnl = metalGroups.reduce((s, g) => s + g.realizedPnl, 0);
 
-  // Today's change in TRY: sum over all positions of currentValue * (changePct/100)
   const stocksDailyChange = positions.reduce((s, p) => {
     const ch = stockChanges[p.symbol];
     if (typeof ch !== 'number') return s;
     return s + p.openValue * (ch / 100);
   }, 0);
-  const metalsDailyChange = metalPositions.reduce(
-    (s, p) => s + p.currentValue * (p.dailyChange / 100),
+  const metalsDailyChange = metalGroups.reduce(
+    (s, g) => s + g.currentValue * (g.dailyChange / 100),
     0,
   );
   const dailyChange = stocksDailyChange + metalsDailyChange;
 
-  // Save transaction
   const handleSaveTx = async (tx: Omit<Transaction, 'id' | 'user_id'>) => {
     if (editTx) {
       await supabase.from('transactions').update({ ...tx }).eq('id', editTx.id);
     } else {
       await supabase.from('transactions').insert({ ...tx, user_id: userId });
-      // Set initial price if not cached
       if (tx.type !== 'div' && tx.price && !prices[tx.symbol]) {
         await supabase.from('price_cache').upsert(
           { user_id: userId, symbol: tx.symbol, price: tx.price, updated_at: new Date().toISOString() },
@@ -207,11 +189,10 @@ export function Dashboard() {
   };
 
   const handleEdit = (id: string) => {
-    const tx = transactions.find(t => t.id === id);
+    const tx = transactions.find((t) => t.id === id);
     if (tx) { setEditTx(tx); setModalOpen(true); }
   };
 
-  // Refresh prices from Yahoo Finance
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -224,40 +205,39 @@ export function Dashboard() {
     }
   };
 
-  // Save / delete metal holding
-  const handleSaveMetal = async (h: Omit<MetalHolding, 'id' | 'user_id' | 'created_at'>) => {
-    if (editMetal) {
-      await supabase.from('metal_holdings').update({ ...h }).eq('id', editMetal.id);
+  const handleSaveMetalTx = async (t: Omit<MetalTransaction, 'id' | 'user_id' | 'created_at'>) => {
+    if (editMetalTx) {
+      await supabase.from('metal_transactions').update({ ...t }).eq('id', editMetalTx.id);
     } else {
-      await supabase.from('metal_holdings').insert({ ...h, user_id: userId });
+      await supabase.from('metal_transactions').insert({ ...t, user_id: userId });
     }
     setMetalModalOpen(false);
-    setEditMetal(null);
+    setEditMetalTx(null);
     loadData();
   };
 
-  const handleDeleteMetal = async () => {
-    if (editMetal) {
-      await supabase.from('metal_holdings').delete().eq('id', editMetal.id);
+  const handleDeleteMetalTx = async () => {
+    if (editMetalTx) {
+      await supabase.from('metal_transactions').delete().eq('id', editMetalTx.id);
       setMetalModalOpen(false);
-      setEditMetal(null);
+      setEditMetalTx(null);
       loadData();
     }
   };
 
-  const handleEditMetal = (id: string) => {
-    const m = metalHoldings.find((x) => x.id === id);
-    if (m) { setEditMetal(m); setMetalModalOpen(true); }
+  const handleEditMetalTx = (id: string) => {
+    const m = metalTxs.find((x) => x.id === id);
+    if (m) { setEditMetalTx(m); setMetalModalOpen(true); }
   };
 
+  const openMetalModal = () => { setEditMetalTx(null); setMetalModalOpen(true); };
+  const openTxModal = () => { setEditTx(null); setModalOpen(true); };
+
   const handleFabClick = () => {
-    if (tab === 'metals') {
-      setEditMetal(null);
-      setMetalModalOpen(true);
-    } else {
-      setEditTx(null);
-      setModalOpen(true);
-    }
+    // Metals tab → metal form. Transactions tab → respect chosen sub-tab.
+    if (tab === 'metals') return openMetalModal();
+    if (tab === 'transactions' && txSubTab === 'metals') return openMetalModal();
+    openTxModal();
   };
 
   const tabClass = (t: Tab) =>
@@ -265,52 +245,35 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      {/* Header */}
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center">
-          <img
-            src="/wordmark-on-light.png"
-            srcSet="/wordmark-on-light.png 1x, /wordmark-on-light@2x.png 2x"
-            alt="bikasa.me"
-            className="h-7 w-auto dark:hidden"
-          />
-          <img
-            src="/wordmark-on-dark.png"
-            srcSet="/wordmark-on-dark.png 1x, /wordmark-on-dark@2x.png 2x"
-            alt="bikasa.me"
-            className="hidden h-7 w-auto dark:block"
-          />
+          <img src="/wordmark-on-light.png" srcSet="/wordmark-on-light.png 1x, /wordmark-on-light@2x.png 2x" alt="bikasa.me" className="h-7 w-auto dark:hidden" />
+          <img src="/wordmark-on-dark.png" srcSet="/wordmark-on-dark.png 1x, /wordmark-on-dark@2x.png 2x" alt="bikasa.me" className="hidden h-7 w-auto dark:block" />
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-kasa-surface2 disabled:opacity-50"
-          >
+          <button onClick={handleRefresh} disabled={refreshing}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-kasa-surface2 disabled:opacity-50">
             {refreshing ? '↻ Güncelleniyor...' : '↻ Güncelle'}
           </button>
-          <button
-            onClick={() => setProfileOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground"
-          >
+          <button onClick={() => setProfileOpen(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
             {(profileName || user?.email || 'U').charAt(0).toUpperCase()}
           </button>
         </div>
       </header>
 
-      {/* Content */}
       <main className="mx-auto max-w-lg px-4 py-4">
         <SummaryCards
           positions={positions}
           totalDividend={totalDividend}
-          hasTransactions={transactions.length > 0}
+          hasTransactions={transactions.length > 0 || metalTxs.length > 0}
           metalsValue={metalsValue}
           metalsPnl={metalsPnl}
+          metalsRealizedPnl={metalsRealizedPnl}
           dailyChange={dailyChange}
         />
 
-        {/* Tabs */}
         <div className="mt-6 flex border-b border-border">
           <button className={tabClass('holdings')} onClick={() => setTab('holdings')}>Portföy</button>
           <button className={tabClass('metals')} onClick={() => setTab('metals')}>Metaller</button>
@@ -322,54 +285,45 @@ export function Dashboard() {
           {tab === 'holdings' && <HoldingsView positions={positions} onAddFirst={() => setModalOpen(true)} />}
           {tab === 'metals' && (
             <MetalsView
-              positions={metalPositions}
+              groups={metalGroups}
               pricesStale={metalsStale}
-              onAddFirst={() => { setEditMetal(null); setMetalModalOpen(true); }}
-              onEdit={handleEditMetal}
+              onAddFirst={openMetalModal}
               lastUpdated={lastUpdated}
             />
           )}
           {tab === 'analytics' && (
-            <AnalyticsView
-              positions={positions}
-              metalPositions={metalPositions}
-              onAddFirst={handleFabClick}
+            <AnalyticsView positions={positions} metalGroups={metalGroups} onAddFirst={handleFabClick} />
+          )}
+          {tab === 'transactions' && (
+            <TransactionsView
+              transactions={transactions}
+              metalTxs={metalTxs}
+              onEdit={handleEdit}
+              onEditMetal={handleEditMetalTx}
+              activeSubTab={txSubTab}
+              onSubTabChange={setTxSubTab}
             />
           )}
-          {tab === 'transactions' && <TransactionsView transactions={transactions} onEdit={handleEdit} />}
         </div>
       </main>
 
-      {/* FAB */}
-      <button
-        onClick={handleFabClick}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-lg transition-transform hover:scale-105"
-      >
+      <button onClick={handleFabClick}
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground shadow-lg transition-transform hover:scale-105">
         +
       </button>
 
-      {/* Transaction Modal */}
-      <TransactionModal
-        open={modalOpen}
+      <TransactionModal open={modalOpen}
         onClose={() => { setModalOpen(false); setEditTx(null); }}
-        onSave={handleSaveTx}
-        onDelete={handleDeleteTx}
-        editTx={editTx}
-      />
+        onSave={handleSaveTx} onDelete={handleDeleteTx} editTx={editTx} />
 
-      {/* Metal Modal */}
-      <MetalModal
-        open={metalModalOpen}
-        onClose={() => { setMetalModalOpen(false); setEditMetal(null); }}
-        onSave={handleSaveMetal}
-        onDelete={handleDeleteMetal}
-        editHolding={editMetal}
-      />
+      <MetalModal open={metalModalOpen}
+        onClose={() => { setMetalModalOpen(false); setEditMetalTx(null); }}
+        onSave={handleSaveMetalTx} onDelete={handleDeleteMetalTx}
+        editTx={editMetalTx} allTxs={metalTxs} />
 
-      {/* Profile Modal */}
       {profileOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm" onClick={() => setProfileOpen(false)}>
-          <div className="w-80 rounded-2xl border border-border bg-kasa-surface p-5" onClick={e => e.stopPropagation()}>
+          <div className="w-80 rounded-2xl border border-border bg-kasa-surface p-5" onClick={(e) => e.stopPropagation()}>
             <h2 className="mb-4 text-lg font-semibold text-foreground">Hesap</h2>
             <div className="space-y-3">
               <div>
@@ -381,12 +335,8 @@ export function Dashboard() {
                 <input readOnly value={profileName} className="w-full rounded-lg border border-border bg-kasa-surface2 px-3 py-2 text-sm text-foreground" />
               </div>
             </div>
-            <button onClick={signOut} className="mt-4 w-full rounded-lg border border-kasa-red/30 py-2 text-sm text-kasa-red">
-              Çıkış Yap
-            </button>
-            <button onClick={() => setProfileOpen(false)} className="mt-2 w-full py-2 text-sm text-kasa-text2">
-              Kapat
-            </button>
+            <button onClick={signOut} className="mt-4 w-full rounded-lg border border-kasa-red/30 py-2 text-sm text-kasa-red">Çıkış Yap</button>
+            <button onClick={() => setProfileOpen(false)} className="mt-2 w-full py-2 text-sm text-kasa-text2">Kapat</button>
           </div>
         </div>
       )}

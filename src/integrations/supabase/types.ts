@@ -14,32 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
-      metal_holdings: {
+      metal_transactions: {
         Row: {
-          avg_cost_try: number
           created_at: string
+          date: string
           grams: number
           id: string
           metal_type: Database["public"]["Enums"]["metal_type"]
-          purchase_source: string | null
+          price_per_gram: number
+          source: string | null
+          type: string
           user_id: string
         }
         Insert: {
-          avg_cost_try: number
           created_at?: string
+          date: string
           grams: number
           id?: string
           metal_type: Database["public"]["Enums"]["metal_type"]
-          purchase_source?: string | null
+          price_per_gram: number
+          source?: string | null
+          type: string
           user_id: string
         }
         Update: {
-          avg_cost_try?: number
           created_at?: string
+          date?: string
           grams?: number
           id?: string
           metal_type?: Database["public"]["Enums"]["metal_type"]
-          purchase_source?: string | null
+          price_per_gram?: number
+          source?: string | null
+          type?: string
           user_id?: string
         }
         Relationships: []

@@ -20,16 +20,17 @@ interface Props {
   hasTransactions: boolean;
   metalsValue?: number;
   metalsPnl?: number;
+  metalsRealizedPnl?: number;
   dailyChange?: number;
 }
 
-export function SummaryCards({ positions, totalDividend, hasTransactions, metalsValue = 0, metalsPnl = 0, dailyChange = 0 }: Props) {
+export function SummaryCards({ positions, totalDividend, hasTransactions, metalsValue = 0, metalsPnl = 0, metalsRealizedPnl = 0, dailyChange = 0 }: Props) {
   const stocksValue = positions.reduce((s, p) => s + p.openValue, 0);
   const totalCost = positions.reduce((s, p) => s + p.openCost, 0);
   const stocksPnl = positions.reduce((s, p) => s + p.unrealizedPnl, 0);
   const totalValue = stocksValue + metalsValue;
   const unrealizedPnl = stocksPnl + metalsPnl;
-  const realizedPnl = positions.reduce((s, p) => s + p.realizedPnl, 0);
+  const realizedPnl = positions.reduce((s, p) => s + p.realizedPnl, 0) + metalsRealizedPnl;
   const totalPct = totalCost > 0 ? (unrealizedPnl / totalCost * 100) : 0;
   const hasAny = hasTransactions || metalsValue > 0;
   const prevTotal = totalValue - dailyChange;

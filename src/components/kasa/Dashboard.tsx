@@ -21,6 +21,7 @@ export function Dashboard() {
   const { user, profileName, signOut } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
+  const [stockChanges, setStockChanges] = useState<Record<string, number>>({});
   const [tab, setTab] = useState<Tab>('holdings');
   const [modalOpen, setModalOpen] = useState(false);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
@@ -84,6 +85,18 @@ export function Dashboard() {
   const metalsValue = metalPositions.reduce((s, p) => s + p.currentValue, 0);
   const metalsPnl = metalPositions.reduce((s, p) => s + p.pnl, 0);
 
+  // Today's change in TRY: sum over all positions of currentValue * (changePct/100)
+  const stocksDailyChange = positions.reduce((s, p) => {
+    const ch = stockChanges[p.symbol];
+    if (typeof ch !== 'number') return s;
+    return s + p.openValue * (ch / 100);
+  }, 0);
+  const metalsDailyChange = metalPositions.reduce(
+    (s, p) => s + p.currentValue * (p.dailyChange / 100),
+    0,
+  );
+  const dailyChange = stocksDailyChange + metalsDailyChange;
+
   // Save transaction
   const handleSaveTx = async (tx: Omit<Transaction, 'id' | 'user_id'>) => {
     if (editTx) {
@@ -133,6 +146,9 @@ export function Dashboard() {
           for (const row of rows) {
             await supabase.from('price_cache').upsert(row, { onConflict: 'user_id,symbol' });
           }
+        }
+        if (result.changes) {
+          setStockChanges((prev) => ({ ...prev, ...result.changes }));
         }
       }
       await refreshMetalPrices();
@@ -226,6 +242,7 @@ export function Dashboard() {
           hasTransactions={transactions.length > 0}
           metalsValue={metalsValue}
           metalsPnl={metalsPnl}
+          dailyChange={dailyChange}
         />
 
         {/* Tabs */}

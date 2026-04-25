@@ -7,18 +7,20 @@ interface Props {
   hasTransactions: boolean;
   metalsValue?: number;
   metalsPnl?: number;
+  dailyChange?: number;
 }
 
-export function SummaryCards({ positions, totalDividend, hasTransactions, metalsValue = 0, metalsPnl = 0 }: Props) {
+export function SummaryCards({ positions, totalDividend, hasTransactions, metalsValue = 0, metalsPnl = 0, dailyChange = 0 }: Props) {
   const stocksValue = positions.reduce((s, p) => s + p.openValue, 0);
   const totalCost = positions.reduce((s, p) => s + p.openCost, 0);
   const stocksPnl = positions.reduce((s, p) => s + p.unrealizedPnl, 0);
   const totalValue = stocksValue + metalsValue;
   const unrealizedPnl = stocksPnl + metalsPnl;
   const realizedPnl = positions.reduce((s, p) => s + p.realizedPnl, 0);
-  const openPositions = positions.filter(p => p.openQty > 0).length;
   const totalPct = totalCost > 0 ? (unrealizedPnl / totalCost * 100) : 0;
   const hasAny = hasTransactions || metalsValue > 0;
+  const prevTotal = totalValue - dailyChange;
+  const dailyPct = prevTotal > 0 ? (dailyChange / prevTotal) * 100 : 0;
 
   return (
     <div className="space-y-4">
@@ -39,11 +41,8 @@ export function SummaryCards({ positions, totalDividend, hasTransactions, metals
       <div className="grid grid-cols-2 gap-3">
         <MiniCard label="Potansiyel K/Z" value={unrealizedPnl} isCurrency />
         <MiniCard label="Gerçekleşen K/Z" value={realizedPnl} isCurrency />
+        <DailyChangeCard value={dailyChange} pct={dailyPct} />
         <MiniCard label="Toplam Temettü" value={totalDividend} isCurrency />
-        <div className="rounded-xl border border-border bg-kasa-surface p-3">
-          <p className="text-[10px] text-kasa-text2">Pozisyon Sayısı</p>
-          <p className="mt-0.5 font-mono text-lg font-semibold text-foreground">{openPositions}</p>
-        </div>
       </div>
     </div>
   );
@@ -56,6 +55,22 @@ function MiniCard({ label, value, isCurrency }: { label: string; value: number; 
       <p className="text-[10px] text-kasa-text2">{label}</p>
       <p className={`mt-0.5 font-mono text-lg font-semibold ${color}`}>
         {value > 0 ? '+' : ''}{fmt(value)}{isCurrency ? ' ₺' : ''}
+      </p>
+    </div>
+  );
+}
+
+function DailyChangeCard({ value, pct }: { value: number; pct: number }) {
+  const color = value > 0 ? 'text-kasa-green' : value < 0 ? 'text-kasa-red' : 'text-foreground';
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  return (
+    <div className="rounded-xl border border-border bg-kasa-surface p-3">
+      <p className="text-[10px] text-kasa-text2">Bugünkü Değişim</p>
+      <p className={`mt-0.5 font-mono text-lg font-semibold ${color}`}>
+        {sign}{fmt(Math.abs(value))} ₺
+      </p>
+      <p className={`font-mono text-[10px] ${color}`}>
+        {sign}{fmt(Math.abs(pct))}%
       </p>
     </div>
   );

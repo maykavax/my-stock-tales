@@ -9,6 +9,7 @@ export const fetchStockPrices = createServerFn({ method: 'POST' })
   .inputValidator((input: { symbols: string[] }) => inputSchema.parse(input))
   .handler(async ({ data }) => {
     const results: Record<string, number> = {};
+    const changes: Record<string, number> = {};
 
     try {
       const fetches = data.symbols.map(async (symbol) => {
@@ -28,6 +29,10 @@ export const fetchStockPrices = createServerFn({ method: 'POST' })
           const meta = json?.chart?.result?.[0]?.meta;
           if (meta?.regularMarketPrice) {
             results[symbol] = meta.regularMarketPrice;
+            const prev = meta.chartPreviousClose ?? meta.previousClose;
+            if (typeof prev === 'number' && prev > 0) {
+              changes[symbol] = ((meta.regularMarketPrice - prev) / prev) * 100;
+            }
           }
         } catch (e) {
           console.error(`Failed to fetch ${yahooSymbol}:`, e);
@@ -36,9 +41,9 @@ export const fetchStockPrices = createServerFn({ method: 'POST' })
 
       await Promise.all(fetches);
 
-      return { prices: results, error: null };
+      return { prices: results, changes, error: null };
     } catch (err) {
       console.error('Yahoo Finance fetch failed:', err);
-      return { prices: results, error: 'Yahoo Finance bağlantı hatası' };
+      return { prices: results, changes, error: 'Yahoo Finance bağlantı hatası' };
     }
   });

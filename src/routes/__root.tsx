@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 function NotFoundComponent() {
   return (
@@ -29,23 +30,28 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Kasa — Portföy Takibi" },
+      { title: "Bikasa.me — Portföy Takibi" },
       { name: "description", content: "Borsa portföyünüzü tek yerden takip edin" },
-      { property: "og:title", content: "Kasa — Portföy Takibi" },
+      { name: "theme-color", content: "#A8E40C" },
+      { property: "og:title", content: "Bikasa.me" },
       { property: "og:description", content: "Borsa portföyünüzü tek yerden takip edin" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/app-icon-1024.png" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Kasa — Portföy Takibi" },
+      { name: "twitter:title", content: "Bikasa.me" },
       { name: "twitter:description", content: "Borsa portföyünüzü tek yerden takip edin" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/484d0f78-52b3-49d3-bdbc-c21539f6d6dd/id-preview-0418406f--3e248b73-f2e8-4556-97d1-c461ead2ee8c.lovable.app-1776895756469.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/484d0f78-52b3-49d3-bdbc-c21539f6d6dd/id-preview-0418406f--3e248b73-f2e8-4556-97d1-c461ead2ee8c.lovable.app-1776895756469.png" },
+      { name: "twitter:image", content: "/app-icon-1024.png" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      { rel: "icon", type: "image/png", sizes: "16x16", href: "/favicon-16.png" },
+      { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon-180.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -54,10 +60,12 @@ export const Route = createRootRoute({
 });
 
 function RootShell({ children }: { children: React.ReactNode }) {
+  const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}if(t==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
   return (
-    <html lang="en">
+    <html lang="tr" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
         {children}
@@ -68,5 +76,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <ThemeProvider>
+      <Outlet />
+    </ThemeProvider>
+  );
 }

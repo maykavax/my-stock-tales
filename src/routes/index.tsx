@@ -14,7 +14,7 @@ function Index() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="font-display text-xl text-foreground">Kasa.</p>
+        <p className="font-display text-xl text-foreground">Bikasa.me</p>
       </div>
     );
   }

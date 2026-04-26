@@ -306,7 +306,7 @@ export function Dashboard() {
         </div>
 
         <div className="mt-4 pb-24">
-          {tab === 'holdings' && <HoldingsView positions={positions} onAddFirst={() => setModalOpen(true)} />}
+          {tab === 'holdings' && <HoldingsView positions={positions} stockNames={stockNames} onAddFirst={() => setModalOpen(true)} />}
           {tab === 'metals' && (
             <MetalsView
               groups={metalGroups}
@@ -339,7 +339,7 @@ export function Dashboard() {
 
       <TransactionModal open={modalOpen}
         onClose={() => { setModalOpen(false); setEditTx(null); }}
-        onSave={handleSaveTx} onDelete={handleDeleteTx} editTx={editTx} />
+        onSave={handleSaveTx} onDelete={handleDeleteTx} editTx={editTx} stockNames={stockNames} />
 
       <MetalModal open={metalModalOpen}
         onClose={() => { setMetalModalOpen(false); setEditMetalTx(null); }}

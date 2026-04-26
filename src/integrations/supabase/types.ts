@@ -92,6 +92,33 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_names: {
+        Row: {
+          id: string
+          long_name: string | null
+          short_name: string | null
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          long_name?: string | null
+          short_name?: string | null
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          long_name?: string | null
+          short_name?: string | null
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           broker: string | null

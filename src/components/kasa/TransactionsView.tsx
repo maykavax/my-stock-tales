@@ -1,11 +1,12 @@
-import { fmt, fmtInt } from '@/lib/portfolio';
-import type { Transaction } from '@/lib/portfolio';
+import { fmt, fmtInt, formatCompanyName } from '@/lib/portfolio';
+import type { Transaction, StockName } from '@/lib/portfolio';
 import type { MetalTransaction } from '@/lib/metals';
 import { METAL_SHORT, realizedPnlForSell, fmtGrams } from '@/lib/metals';
 
 interface Props {
   transactions: Transaction[];
   metalTxs: MetalTransaction[];
+  stockNames?: Record<string, StockName>;
   onEdit: (id: string) => void;
   onEditMetal: (id: string) => void;
   activeSubTab: 'stocks' | 'metals';
@@ -14,7 +15,7 @@ interface Props {
 
 type SubTab = 'stocks' | 'metals';
 
-export function TransactionsView({ transactions, metalTxs, onEdit, onEditMetal, activeSubTab, onSubTabChange }: Props) {
+export function TransactionsView({ transactions, metalTxs, stockNames, onEdit, onEditMetal, activeSubTab, onSubTabChange }: Props) {
   const sub = activeSubTab;
   const subClass = (t: SubTab) =>
     `flex-1 rounded-lg py-1.5 text-xs font-semibold transition-colors ${sub === t ? 'bg-primary text-primary-foreground' : 'text-kasa-text2'}`;
@@ -27,7 +28,7 @@ export function TransactionsView({ transactions, metalTxs, onEdit, onEditMetal, 
       </div>
 
       {sub === 'stocks' ? (
-        <StockList transactions={transactions} onEdit={onEdit} />
+        <StockList transactions={transactions} stockNames={stockNames} onEdit={onEdit} />
       ) : (
         <MetalList txs={metalTxs} onEdit={onEditMetal} />
       )}
@@ -59,7 +60,7 @@ function fmtDate(date: string) {
   return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function StockList({ transactions, onEdit }: { transactions: Transaction[]; onEdit: (id: string) => void }) {
+function StockList({ transactions, stockNames, onEdit }: { transactions: Transaction[]; stockNames?: Record<string, StockName>; onEdit: (id: string) => void }) {
   if (transactions.length === 0) return <EmptyState msg="Henüz hisse işlem kaydın yok." />;
   const grouped = groupByDate(transactions);
 
@@ -84,6 +85,7 @@ function StockList({ transactions, onEdit }: { transactions: Transaction[]; onEd
               const badgeColor = t.type === 'buy' ? 'bg-kasa-green/20 text-kasa-green'
                 : t.type === 'sell' ? 'bg-kasa-red/20 text-kasa-red'
                 : 'bg-primary/20 text-primary';
+              const company = formatCompanyName(stockNames?.[t.symbol]);
 
               return (
                 <button
@@ -93,8 +95,13 @@ function StockList({ transactions, onEdit }: { transactions: Transaction[]; onEd
                 >
                   <div className="flex items-center gap-3">
                     <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${badgeColor}`}>{badge}</span>
-                    <div>
-                      <p className="font-mono text-sm font-semibold text-foreground">{t.symbol}</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-mono text-sm font-semibold text-foreground">{t.symbol}</p>
+                        {company && (
+                          <p className="text-xs text-kasa-text2 truncate max-w-[140px]">{company}</p>
+                        )}
+                      </div>
                       <p className="text-[10px] text-kasa-text2">{t.type === 'div' ? 'Temettü' : t.broker}</p>
                     </div>
                   </div>

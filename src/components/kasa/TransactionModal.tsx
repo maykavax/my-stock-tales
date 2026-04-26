@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import type { Transaction } from '@/lib/portfolio';
+import type { Transaction, StockName } from '@/lib/portfolio';
+import { formatCompanyName } from '@/lib/portfolio';
 
 interface Props {
   open: boolean;
@@ -7,11 +8,12 @@ interface Props {
   onSave: (tx: Omit<Transaction, 'id' | 'user_id'>) => void;
   onDelete?: () => void;
   editTx?: Transaction | null;
+  stockNames?: Record<string, StockName>;
 }
 
 const brokers = ['Akbank', 'İşbankası', 'Yapı Kredi', 'Vakıfbank', 'Şekerbank', 'Garanti', 'Midas', 'Gedik', 'Diğer'];
 
-export function TransactionModal({ open, onClose, onSave, onDelete, editTx }: Props) {
+export function TransactionModal({ open, onClose, onSave, onDelete, editTx, stockNames }: Props) {
   const [type, setType] = useState<'buy' | 'sell' | 'div'>('buy');
   const [symbol, setSymbol] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -85,6 +87,12 @@ export function TransactionModal({ open, onClose, onSave, onDelete, editTx }: Pr
             <Field label="Hisse Kodu">
               <input value={symbol} onChange={e => setSymbol(e.target.value)} placeholder="AKBNK"
                 className="w-full rounded-lg border border-border bg-kasa-surface2 px-3 py-2 text-sm text-foreground outline-none focus:border-primary font-mono uppercase" />
+              {(() => {
+                const company = formatCompanyName(stockNames?.[symbol.toUpperCase()]);
+                return company ? (
+                  <p className="mt-1 text-[11px] text-kasa-text2">→ {company}</p>
+                ) : null;
+              })()}
             </Field>
 
             {type !== 'div' && (

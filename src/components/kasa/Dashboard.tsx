@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { calculatePortfolio, getTotalDividend } from '@/lib/portfolio';
-import type { Transaction } from '@/lib/portfolio';
+import type { Transaction, StockName } from '@/lib/portfolio';
 import { SummaryCards } from './SummaryCards';
 import { HoldingsView } from './HoldingsView';
 import { TransactionsView } from './TransactionsView';
@@ -22,6 +22,7 @@ export function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [stockChanges, setStockChanges] = useState<Record<string, number>>({});
+  const [stockNames, setStockNames] = useState<Record<string, StockName>>({});
   const [tab, setTab] = useState<Tab>('holdings');
   const [modalOpen, setModalOpen] = useState(false);
   const [editTx, setEditTx] = useState<Transaction | null>(null);
@@ -56,6 +57,16 @@ export function Dashboard() {
       const p: Record<string, number> = {};
       for (const c of cached) p[c.symbol] = c.price;
       setPrices(p);
+    }
+
+    const { data: names } = await supabase
+      .from('stock_names')
+      .select('*')
+      .eq('user_id', userId);
+    if (names) {
+      const map: Record<string, StockName> = {};
+      for (const n of names) map[n.symbol] = { shortName: n.short_name, longName: n.long_name };
+      setStockNames(map);
     }
 
     const { data: metals } = await supabase
@@ -97,6 +108,19 @@ export function Dashboard() {
       }
       if (result.changes) {
         setStockChanges((prev) => ({ ...prev, ...result.changes }));
+      }
+      if (result.names && Object.keys(result.names).length > 0) {
+        setStockNames((prev) => ({ ...prev, ...result.names }));
+        const nameRows = Object.entries(result.names).map(([symbol, n]) => ({
+          user_id: userId,
+          symbol,
+          short_name: n.shortName ?? null,
+          long_name: n.longName ?? null,
+          updated_at: new Date().toISOString(),
+        }));
+        for (const row of nameRows) {
+          await supabase.from('stock_names').upsert(row, { onConflict: 'user_id,symbol' });
+        }
       }
       return true;
     } catch (err) {
@@ -282,7 +306,7 @@ export function Dashboard() {
         </div>
 
         <div className="mt-4 pb-24">
-          {tab === 'holdings' && <HoldingsView positions={positions} onAddFirst={() => setModalOpen(true)} />}
+          {tab === 'holdings' && <HoldingsView positions={positions} stockNames={stockNames} onAddFirst={() => setModalOpen(true)} />}
           {tab === 'metals' && (
             <MetalsView
               groups={metalGroups}
@@ -292,12 +316,13 @@ export function Dashboard() {
             />
           )}
           {tab === 'analytics' && (
-            <AnalyticsView positions={positions} metalGroups={metalGroups} onAddFirst={handleFabClick} />
+            <AnalyticsView positions={positions} metalGroups={metalGroups} stockNames={stockNames} onAddFirst={handleFabClick} />
           )}
           {tab === 'transactions' && (
             <TransactionsView
               transactions={transactions}
               metalTxs={metalTxs}
+              stockNames={stockNames}
               onEdit={handleEdit}
               onEditMetal={handleEditMetalTx}
               activeSubTab={txSubTab}
@@ -314,7 +339,7 @@ export function Dashboard() {
 
       <TransactionModal open={modalOpen}
         onClose={() => { setModalOpen(false); setEditTx(null); }}
-        onSave={handleSaveTx} onDelete={handleDeleteTx} editTx={editTx} />
+        onSave={handleSaveTx} onDelete={handleDeleteTx} editTx={editTx} stockNames={stockNames} />
 
       <MetalModal open={metalModalOpen}
         onClose={() => { setMetalModalOpen(false); setEditMetalTx(null); }}

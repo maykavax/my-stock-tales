@@ -1,11 +1,12 @@
-import { fmt } from '@/lib/portfolio';
-import type { Position } from '@/lib/portfolio';
+import { fmt, formatCompanyName } from '@/lib/portfolio';
+import type { Position, StockName } from '@/lib/portfolio';
 import type { MetalGroup } from '@/lib/metals';
 import { METAL_SHORT } from '@/lib/metals';
 
 interface Props {
   positions: Position[];
   metalGroups: MetalGroup[];
+  stockNames?: Record<string, StockName>;
   onAddFirst?: () => void;
 }
 
@@ -85,7 +86,7 @@ function ChartCard({ title, segments, total, size }: { title: string; segments: 
   );
 }
 
-export function AnalyticsView({ positions, metalGroups, onAddFirst }: Props) {
+export function AnalyticsView({ positions, metalGroups, stockNames, onAddFirst }: Props) {
   const openStocks = positions.filter((p) => p.openQty > 0);
   const stocksValue = openStocks.reduce((s, p) => s + p.openValue, 0);
 
@@ -115,12 +116,15 @@ export function AnalyticsView({ positions, metalGroups, onAddFirst }: Props) {
   }
 
   const stockSegments: Segment[] = openStocks
-    .map((p, i) => ({
-      label: p.symbol,
-      value: p.openValue,
-      pct: stocksValue > 0 ? (p.openValue / stocksValue) * 100 : 0,
-      color: palette[i % palette.length],
-    }))
+    .map((p, i) => {
+      const company = formatCompanyName(stockNames?.[p.symbol]);
+      return {
+        label: company ? `${p.symbol} · ${company}` : p.symbol,
+        value: p.openValue,
+        pct: stocksValue > 0 ? (p.openValue / stocksValue) * 100 : 0,
+        color: palette[i % palette.length],
+      };
+    })
     .sort((a, b) => b.value - a.value);
 
   const metalSegments: Segment[] = openMetals

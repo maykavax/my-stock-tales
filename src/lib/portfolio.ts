@@ -88,3 +88,50 @@ export function fmt(n: number): string {
 export function fmtInt(n: number): string {
   return n.toLocaleString('tr-TR', { maximumFractionDigits: 0 });
 }
+
+export interface StockName {
+  shortName?: string | null;
+  longName?: string | null;
+}
+
+function toTitleCase(s: string): string {
+  return s
+    .toLocaleLowerCase('tr-TR')
+    .split(/(\s+|[-/])/)
+    .map((part) => {
+      if (!part || /^\s+$/.test(part) || part === '-' || part === '/') return part;
+      // Keep tiny tokens like 'A.Ş.' uppercase if dotted
+      if (/^[a-zçğıöşü]\.[a-zçğıöşü]\.$/i.test(part)) return part.toUpperCase();
+      return part.charAt(0).toLocaleUpperCase('tr-TR') + part.slice(1);
+    })
+    .join('');
+}
+
+function shortenLongName(longName: string): string {
+  let s = longName;
+  // Cut at ',' or common Turkish corporate suffixes
+  const cutWords = [' A.Ş.', ' A.Ş', ' Anonim Şirketi', ' Anonim Sirketi', ' Sanayi', ' Ticaret'];
+  const commaIdx = s.indexOf(',');
+  if (commaIdx > 0) s = s.slice(0, commaIdx);
+  for (const w of cutWords) {
+    const i = s.indexOf(w);
+    if (i > 0) s = s.slice(0, i);
+  }
+  return s.trim();
+}
+
+export function formatCompanyName(n?: StockName | null): string {
+  if (!n) return '';
+  const short = n.shortName?.trim();
+  if (short) {
+    // If all-caps (or mostly), Title Case it
+    const letters = short.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü]/g, '');
+    if (letters && letters === letters.toLocaleUpperCase('tr-TR')) {
+      return toTitleCase(short);
+    }
+    return short;
+  }
+  const long = n.longName?.trim();
+  if (long) return toTitleCase(shortenLongName(long));
+  return '';
+}

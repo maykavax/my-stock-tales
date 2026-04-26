@@ -278,7 +278,7 @@ function Features() {
 
 function HowItWorks() {
   const steps = [
-    { n: '01', title: 'Ücretsiz hesap aç', desc: 'Email'in ile kayıt ol, 30 saniyede hazırsın.' },
+    { n: '01', title: 'Ücretsiz hesap aç', desc: 'E-postanla kayıt ol, 30 saniyede hazırsın.' },
     { n: '02', title: 'Pozisyonlarını ekle', desc: 'Hisse ve metal alımlarını gir, ortalama maliyetini bilesin.' },
     { n: '03', title: 'Her gün takip et', desc: 'Otomatik fiyat güncellemesi, anında kar/zarar.' },
   ];

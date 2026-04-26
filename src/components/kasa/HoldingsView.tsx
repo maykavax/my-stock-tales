@@ -1,12 +1,13 @@
-import { fmt, fmtInt } from '@/lib/portfolio';
-import type { Position } from '@/lib/portfolio';
+import { fmt, fmtInt, formatCompanyName } from '@/lib/portfolio';
+import type { Position, StockName } from '@/lib/portfolio';
 
 interface Props {
   positions: Position[];
+  stockNames?: Record<string, StockName>;
   onAddFirst: () => void;
 }
 
-export function HoldingsView({ positions, onAddFirst }: Props) {
+export function HoldingsView({ positions, stockNames, onAddFirst }: Props) {
   const open = positions.filter(p => p.openQty > 0).sort((a, b) => b.openValue - a.openValue);
 
   if (open.length === 0) {
@@ -30,6 +31,7 @@ export function HoldingsView({ positions, onAddFirst }: Props) {
       {open.map(p => {
         const pnlPct = p.openCost > 0 ? (p.unrealizedPnl / p.openCost * 100) : 0;
         const pnlColor = p.unrealizedPnl >= 0 ? 'text-kasa-green' : 'text-kasa-red';
+        const company = formatCompanyName(stockNames?.[p.symbol]);
 
         return (
           <div key={p.symbol + p.broker} className="rounded-xl border border-border bg-kasa-surface p-4">
@@ -37,6 +39,9 @@ export function HoldingsView({ positions, onAddFirst }: Props) {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-sm font-semibold text-foreground">{p.symbol}</span>
+                  {company && (
+                    <span className="text-xs text-kasa-text2 truncate max-w-[160px]">{company}</span>
+                  )}
                   {p.dividend > 0 && (
                     <span className="rounded bg-kasa-green/20 px-1.5 py-0.5 text-[9px] font-semibold text-kasa-green">
                       TEMETTÜ +{fmt(p.dividend)} ₺

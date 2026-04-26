@@ -10,6 +10,7 @@ export const fetchStockPrices = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const results: Record<string, number> = {};
     const changes: Record<string, number> = {};
+    const names: Record<string, { shortName?: string; longName?: string }> = {};
 
     try {
       const fetches = data.symbols.map(async (symbol) => {
@@ -33,6 +34,11 @@ export const fetchStockPrices = createServerFn({ method: 'POST' })
             if (typeof prev === 'number' && prev > 0) {
               changes[symbol] = ((meta.regularMarketPrice - prev) / prev) * 100;
             }
+            const shortName = typeof meta.shortName === 'string' ? meta.shortName : undefined;
+            const longName = typeof meta.longName === 'string' ? meta.longName : undefined;
+            if (shortName || longName) {
+              names[symbol] = { shortName, longName };
+            }
           }
         } catch (e) {
           console.error(`Failed to fetch ${yahooSymbol}:`, e);
@@ -41,9 +47,9 @@ export const fetchStockPrices = createServerFn({ method: 'POST' })
 
       await Promise.all(fetches);
 
-      return { prices: results, changes, error: null };
+      return { prices: results, changes, names, error: null };
     } catch (err) {
       console.error('Yahoo Finance fetch failed:', err);
-      return { prices: results, changes, error: 'Yahoo Finance bağlantı hatası' };
+      return { prices: results, changes, names, error: 'Yahoo Finance bağlantı hatası' };
     }
   });

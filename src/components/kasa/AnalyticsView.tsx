@@ -2,6 +2,7 @@ import { fmt, formatCompanyName } from '@/lib/portfolio';
 import type { Position, StockName } from '@/lib/portfolio';
 import type { MetalGroup } from '@/lib/metals';
 import { METAL_SHORT } from '@/lib/metals';
+import { usePrivacy } from '@/components/PrivacyProvider';
 
 interface Props {
   positions: Position[];
@@ -16,6 +17,7 @@ const classPalette = ['#d4ff4d', '#60a5fa'];
 interface Segment { label: string; value: number; pct: number; color: string; }
 
 function Donut({ segments, total, size = 240 }: { segments: Segment[]; total: number; size?: number }) {
+  const { privacy } = usePrivacy();
   const cx = size / 2, cy = size / 2;
   const r = size * 0.375, rInner = size * 0.25;
   let cumulative = 0;
@@ -53,12 +55,13 @@ function Donut({ segments, total, size = 240 }: { segments: Segment[]; total: nu
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {arcs}
       <text x={cx} y={cy - 8} textAnchor="middle" className="text-[10px] fill-kasa-text2">TOPLAM</text>
-      <text x={cx} y={cy + 12} textAnchor="middle" className="text-sm font-mono font-bold fill-foreground">{fmt(total)} ₺</text>
+      <text x={cx} y={cy + 12} textAnchor="middle" className="text-sm font-mono font-bold fill-foreground">{privacy ? fmt(total).replace(/\d/g, '•') : fmt(total)} ₺</text>
     </svg>
   );
 }
 
 function Legend({ segments }: { segments: Segment[] }) {
+  const { privacy } = usePrivacy();
   return (
     <div className="mt-4 space-y-2">
       {segments.map((s) => (
@@ -67,7 +70,7 @@ function Legend({ segments }: { segments: Segment[] }) {
             <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
             <span className="font-mono text-xs text-foreground">{s.label}</span>
           </div>
-          <span className="text-xs text-kasa-text2">{fmt(s.pct)}% · {fmt(s.value)} ₺</span>
+          <span className="text-xs text-kasa-text2">{fmt(s.pct)}% · {privacy ? fmt(s.value).replace(/\d/g, '•') : fmt(s.value)} ₺</span>
         </div>
       ))}
     </div>

@@ -1,5 +1,6 @@
 import { fmt } from '@/lib/portfolio';
 import type { Position } from '@/lib/portfolio';
+import { Mask } from '@/components/PrivacyProvider';
 
 const MOTIVATION_LOW = ['Güzel gidiyor.', 'İyi seyirde.', 'İstikrarlı adımlar.'];
 const MOTIVATION_MID = ['Fena değil ortak.', 'Portföyün formda.', 'Böyle devam.'];
@@ -42,12 +43,12 @@ export function SummaryCards({ positions, totalDividend, hasTransactions, metals
       {/* Main value */}
       <div className="rounded-2xl border border-border bg-kasa-surface p-5">
         <p className="text-xs text-kasa-text2">Toplam Portföy Değeri</p>
-        <p className="mt-1 font-mono text-3xl font-bold text-foreground">{fmt(totalValue)}₺</p>
+        <p className="mt-1 font-mono text-3xl font-bold text-foreground"><Mask>{fmt(totalValue)}</Mask>₺</p>
         {!hasAny ? (
           <p className="mt-1 text-xs text-kasa-text2">— henüz işlem yok</p>
         ) : (
           <p className={`mt-1 text-xs font-mono ${unrealizedPnl >= 0 ? 'text-kasa-green' : 'text-kasa-red'}`}>
-            {unrealizedPnl >= 0 ? '▲' : '▼'} {fmt(Math.abs(unrealizedPnl))} ₺ ({unrealizedPnl >= 0 ? '+' : '-'}{fmt(Math.abs(totalPct))}%)
+            {unrealizedPnl >= 0 ? '▲' : '▼'} <Mask>{fmt(Math.abs(unrealizedPnl))}</Mask> ₺ ({unrealizedPnl >= 0 ? '+' : '-'}{fmt(Math.abs(totalPct))}%)
           </p>
         )}
         {motivation && (
@@ -72,7 +73,7 @@ function MiniCard({ label, value, isCurrency }: { label: string; value: number; 
     <div className="rounded-xl border border-border bg-kasa-surface p-3">
       <p className="text-[10px] text-kasa-text2">{label}</p>
       <p className={`mt-0.5 font-mono text-lg font-semibold ${color}`}>
-        {value > 0 ? '+' : ''}{fmt(value)}{isCurrency ? ' ₺' : ''}
+        {value > 0 ? '+' : ''}<Mask>{fmt(value)}</Mask>{isCurrency ? ' ₺' : ''}
       </p>
     </div>
   );
@@ -85,7 +86,7 @@ function DailyChangeCard({ value, pct }: { value: number; pct: number }) {
     <div className="rounded-xl border border-border bg-kasa-surface p-3">
       <p className="text-[10px] text-kasa-text2">Bugünkü Değişim</p>
       <p className={`mt-0.5 font-mono text-lg font-semibold ${color}`}>
-        {sign}{fmt(Math.abs(value))} ₺
+        {sign}<Mask>{fmt(Math.abs(value))}</Mask> ₺
       </p>
       <p className={`font-mono text-[10px] ${color}`}>
         {sign}{fmt(Math.abs(pct))}%

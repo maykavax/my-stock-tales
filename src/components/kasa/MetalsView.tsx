@@ -1,6 +1,7 @@
 import { fmt } from '@/lib/portfolio';
 import { fmtGrams, METAL_SHORT } from '@/lib/metals';
 import type { MetalGroup } from '@/lib/metals';
+import { Mask } from '@/components/PrivacyProvider';
 
 interface Props {
   groups: MetalGroup[];
@@ -41,9 +42,9 @@ export function MetalsView({ groups, pricesStale, onAddFirst, lastUpdated }: Pro
             <span title="Fiyat güncellenemedi" className="text-xs text-kasa-red">⚠ fiyat güncellenemedi</span>
           )}
         </div>
-        <p className="mt-1 font-mono text-3xl font-bold text-foreground">{fmt(totalValue)} ₺</p>
+        <p className="mt-1 font-mono text-3xl font-bold text-foreground"><Mask>{fmt(totalValue)}</Mask> ₺</p>
         <p className={`mt-1 font-mono text-xs ${totalPnl >= 0 ? 'text-kasa-green' : 'text-kasa-red'}`}>
-          {totalPnl >= 0 ? '▲' : '▼'} {fmt(Math.abs(totalPnl))} ₺ ({totalPnl >= 0 ? '+' : '-'}{fmt(Math.abs(totalPct))}%)
+          {totalPnl >= 0 ? '▲' : '▼'} <Mask>{fmt(Math.abs(totalPnl))}</Mask> ₺ ({totalPnl >= 0 ? '+' : '-'}{fmt(Math.abs(totalPct))}%)
         </p>
       </div>
 
@@ -63,10 +64,10 @@ export function MetalsView({ groups, pricesStale, onAddFirst, lastUpdated }: Pro
                       <span title="Fiyat güncellenemedi" className="text-xs text-kasa-red">⚠</span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs text-kasa-text2">{fmtGrams(g.totalGrams)} gr</p>
+                  <p className="mt-0.5 text-xs text-kasa-text2"><Mask>{fmtGrams(g.totalGrams)}</Mask> gr</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-sm font-semibold text-foreground">{fmt(g.currentValue)} ₺</p>
+                  <p className="font-mono text-sm font-semibold text-foreground"><Mask>{fmt(g.currentValue)}</Mask> ₺</p>
                   <p className={`text-xs font-mono ${dayColor}`}>
                     {g.dailyChange >= 0 ? '+' : ''}{fmt(g.dailyChange)}% bugün
                   </p>
@@ -84,7 +85,7 @@ export function MetalsView({ groups, pricesStale, onAddFirst, lastUpdated }: Pro
                 <div>
                   <p className="text-[10px] text-kasa-text2">K/Z</p>
                   <p className={`font-mono text-xs ${pnlColor}`}>
-                    {g.pnl >= 0 ? '+' : ''}{fmt(g.pnl)} ₺
+                    {g.pnl >= 0 ? '+' : ''}<Mask>{fmt(g.pnl)}</Mask> ₺
                   </p>
                 </div>
               </div>

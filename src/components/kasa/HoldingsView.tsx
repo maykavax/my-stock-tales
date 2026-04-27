@@ -1,5 +1,6 @@
 import { fmt, fmtInt, formatCompanyName } from '@/lib/portfolio';
 import type { Position, StockName } from '@/lib/portfolio';
+import { Mask } from '@/components/PrivacyProvider';
 
 interface Props {
   positions: Position[];
@@ -44,16 +45,16 @@ export function HoldingsView({ positions, stockNames, onAddFirst }: Props) {
                   )}
                   {p.dividend > 0 && (
                     <span className="rounded bg-kasa-green/20 px-1.5 py-0.5 text-[9px] font-semibold text-kasa-green">
-                      TEMETTÜ +{fmt(p.dividend)} ₺
+                      TEMETTÜ +<Mask>{fmt(p.dividend)}</Mask> ₺
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs text-kasa-text2">{p.broker} · {fmtInt(p.openQty)} adet</p>
+                <p className="mt-0.5 text-xs text-kasa-text2">{p.broker} · <Mask>{fmtInt(p.openQty)}</Mask> adet</p>
               </div>
               <div className="text-right">
-                <p className="font-mono text-sm font-semibold text-foreground">{fmt(p.openValue)} ₺</p>
+                <p className="font-mono text-sm font-semibold text-foreground"><Mask>{fmt(p.openValue)}</Mask> ₺</p>
                 <p className={`text-xs font-mono ${pnlColor}`}>
-                  {p.unrealizedPnl >= 0 ? '+' : ''}{fmt(p.unrealizedPnl)} ₺ ({p.unrealizedPnl >= 0 ? '+' : ''}{fmt(pnlPct)}%)
+                  {p.unrealizedPnl >= 0 ? '+' : ''}<Mask>{fmt(p.unrealizedPnl)}</Mask> ₺ ({p.unrealizedPnl >= 0 ? '+' : ''}{fmt(pnlPct)}%)
                 </p>
               </div>
             </div>
@@ -68,7 +69,7 @@ export function HoldingsView({ positions, stockNames, onAddFirst }: Props) {
               </div>
               <div>
                 <p className="text-[10px] text-kasa-text2">Toplam Maliyet</p>
-                <p className="font-mono text-xs text-foreground">{fmt(p.openCost)} ₺</p>
+                <p className="font-mono text-xs text-foreground"><Mask>{fmt(p.openCost)}</Mask> ₺</p>
               </div>
             </div>
           </div>

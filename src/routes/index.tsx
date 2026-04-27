@@ -316,12 +316,12 @@ function CTA() {
         </div>
         <Reveal>
           <h2 className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
-            Yatırım takibinde devrim.
+            Portföyünü hak ettiği yere taşı.
           </h2>
         </Reveal>
         <Reveal delay={120}>
           <p className="mx-auto mt-4 max-w-xl text-base text-foreground/80 sm:text-lg">
-            Bir kez başlayınca, geri dönemeyeceksin.
+            Excel'den, defterlerden, dağınık notlardan kurtul.
           </p>
         </Reveal>
         <Reveal delay={240}>

@@ -14,6 +14,7 @@ import { fetchStockPrices } from '@/lib/yahoo-finance.functions';
 import { fetchMetalPrices, calculateMetalGroups } from '@/lib/metals';
 import type { MetalTransaction, MetalPrices } from '@/lib/metals';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { PrivacyToggle } from '@/components/PrivacyToggle';
 
 type Tab = 'holdings' | 'metals' | 'analytics' | 'transactions';
 
@@ -276,6 +277,7 @@ export function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <PrivacyToggle />
           <button onClick={handleRefresh} disabled={refreshing}
             className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-kasa-surface2 disabled:opacity-50">
             {refreshing ? '↻ Güncelleniyor...' : '↻ Güncelle'}

@@ -2,6 +2,7 @@ import { fmt, fmtInt, formatCompanyName } from '@/lib/portfolio';
 import type { Transaction, StockName } from '@/lib/portfolio';
 import type { MetalTransaction } from '@/lib/metals';
 import { METAL_SHORT, realizedPnlForSell, fmtGrams } from '@/lib/metals';
+import { Mask } from '@/components/PrivacyProvider';
 
 interface Props {
   transactions: Transaction[];
@@ -106,8 +107,8 @@ function StockList({ transactions, stockNames, onEdit }: { transactions: Transac
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-sm text-foreground">{amount}</p>
-                    <p className="text-[10px] text-kasa-text2">{detail}</p>
+                    <p className="font-mono text-sm text-foreground"><Mask>{amount}</Mask></p>
+                    <p className="text-[10px] text-kasa-text2"><Mask>{detail}</Mask></p>
                   </div>
                 </button>
               );
@@ -152,11 +153,11 @@ function MetalList({ txs, onEdit }: { txs: MetalTransaction[]; onEdit: (id: stri
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-sm text-foreground">{amount}</p>
-                    <p className="text-[10px] text-kasa-text2">{detail}</p>
+                    <p className="font-mono text-sm text-foreground"><Mask>{amount}</Mask></p>
+                    <p className="text-[10px] text-kasa-text2"><Mask>{detail}</Mask></p>
                     {t.type === 'sell' && (
                       <p className={`mt-0.5 font-mono text-[10px] ${realized >= 0 ? 'text-kasa-green' : 'text-kasa-red'}`}>
-                        {realized >= 0 ? '+' : ''}{fmt(realized)} ₺ K/Z
+                        {realized >= 0 ? '+' : ''}<Mask>{fmt(realized)}</Mask> ₺ K/Z
                       </p>
                     )}
                   </div>

@@ -83,6 +83,7 @@ export function Dashboard() {
   const refreshMetalPrices = useCallback(async () => {
     try {
       const p = await fetchMetalPrices();
+      console.log('[METAL] setMetalPrices çağrılıyor:', p);
       setMetalPrices(p);
       setMetalsStale(false);
       return true;

@@ -49,9 +49,11 @@ function parseNumber(v: unknown): number {
 }
 
 export async function fetchMetalPrices(): Promise<MetalPrices> {
+  console.log('[METAL] Fetch başladı:', new Date().toISOString());
   const res = await fetch('https://finans.truncgil.com/v4/today.json');
   if (!res.ok) throw new Error('Truncgil API error');
   const data = await res.json();
+  console.log('[METAL] Raw response:', JSON.stringify(data).substring(0, 500));
   const out: MetalPrices = { gold: undefined, silver: undefined, platinum: undefined, palladium: undefined };
   (Object.keys(TRUNCGIL_KEY) as MetalType[]).forEach((m) => {
     const node = data?.[TRUNCGIL_KEY[m]];
@@ -61,6 +63,12 @@ export async function fetchMetalPrices(): Promise<MetalPrices> {
         change: parseNumber(node.Change ?? node.change ?? 0),
       };
     }
+  });
+  console.log('[METAL] Parsed values:', {
+    GRA: out.gold,
+    GUMUS: out.silver,
+    GPL: out.platinum,
+    PAL: out.palladium,
   });
   return out;
 }

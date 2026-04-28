@@ -50,7 +50,14 @@ function parseNumber(v: unknown): number {
 
 export async function fetchMetalPrices(): Promise<MetalPrices> {
   console.log('[METAL] Fetch başladı:', new Date().toISOString());
-  const res = await fetch('https://finans.truncgil.com/v4/today.json');
+  const url = `https://finans.truncgil.com/v4/today.json?_t=${Date.now()}`;
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+    },
+  });
   if (!res.ok) throw new Error('Truncgil API error');
   const data = await res.json();
   console.log('[METAL] Raw response:', JSON.stringify(data).substring(0, 500));

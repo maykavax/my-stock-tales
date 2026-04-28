@@ -222,13 +222,95 @@ function PhoneShowcase() {
           </PhoneFrame>
         </div>
       </div>
-      {/* Mobile: single phone */}
-      <div className="flex justify-center sm:hidden">
-        <PhoneFrame>
-          <PortfolioPhoneScreen />
-        </PhoneFrame>
+      {/* Mobile: horizontal carousel */}
+      <div className="sm:hidden">
+        <PhoneCarousel />
       </div>
     </>
+  );
+}
+
+function PhoneCarousel() {
+  const slides = [
+    { key: 'portfolio', node: <PortfolioPhoneScreen /> },
+    { key: 'analytics', node: <AnalyticsPhoneScreen /> },
+    { key: 'metals', node: <MetalsPhoneScreen /> },
+  ];
+  const [active, setActive] = useState(0);
+  const userInteractedRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isProgrammaticScroll = useRef(false);
+
+  // Auto-advance every 4s until user interacts
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (userInteractedRef.current) return;
+      setActive((prev) => (prev + 1) % slides.length);
+    }, 4000);
+    return () => window.clearInterval(id);
+  }, [slides.length]);
+
+  // Programmatic scroll when active changes
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const child = el.children[active] as HTMLElement | undefined;
+    if (!child) return;
+    isProgrammaticScroll.current = true;
+    el.scrollTo({ left: child.offsetLeft, behavior: 'smooth' });
+    const t = window.setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [active]);
+
+  const handleTouchStart = () => {
+    userInteractedRef.current = true;
+  };
+
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== active && idx >= 0 && idx < slides.length) {
+      setActive(idx);
+    }
+  };
+
+  const goTo = (i: number) => {
+    userInteractedRef.current = true;
+    setActive(i);
+  };
+
+  return (
+    <div className="flex flex-col items-center">
+      <div
+        ref={containerRef}
+        onTouchStart={handleTouchStart}
+        onScroll={handleScroll}
+        className="flex w-full snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ scrollBehavior: 'smooth' }}
+      >
+        {slides.map((s) => (
+          <div key={s.key} className="flex w-full shrink-0 snap-center justify-center py-2">
+            <PhoneFrame>{s.node}</PhoneFrame>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center gap-2">
+        {slides.map((s, i) => (
+          <button
+            key={s.key}
+            type="button"
+            aria-label={`Slide ${i + 1}`}
+            onClick={() => goTo(i)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === active ? 'w-6 bg-[#A8E40C]' : 'w-2 bg-neutral-600'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 

@@ -2,6 +2,8 @@ import { fmt } from '@/lib/portfolio';
 import { fmtGrams, METAL_SHORT } from '@/lib/metals';
 import type { MetalGroup } from '@/lib/metals';
 import { Mask } from '@/components/PrivacyProvider';
+import { Info } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Props {
   groups: MetalGroup[];
@@ -99,6 +101,25 @@ export function MetalsView({ groups, pricesStale, onAddFirst, lastUpdated }: Pro
             · Son güncelleme: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="Fiyat kaynağı hakkında bilgi"
+              className="ml-1.5 inline-flex translate-y-[1px] items-center text-kasa-text2/70 transition-colors hover:text-kasa-text2 focus:outline-none focus-visible:text-foreground"
+            >
+              <Info className="h-3 w-3" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="start"
+            sideOffset={6}
+            className="max-w-[280px] p-3 text-xs leading-relaxed"
+          >
+            Fiyatlar Kapalıçarşı serbest piyasa referansıdır. Banka alım/satım fiyatları (ör Kuveyt Türk, Garanti, İş Bankası) %1-3 oranında farklılık gösterebilir.
+          </PopoverContent>
+        </Popover>
       </p>
     </div>
   );

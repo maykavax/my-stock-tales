@@ -239,7 +239,6 @@ function PhoneCarousel() {
   const [active, setActive] = useState(0);
   const userInteractedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isProgrammaticScroll = useRef(false);
 
   // Auto-advance every 4s until user interacts
   useEffect(() => {
@@ -254,14 +253,7 @@ function PhoneCarousel() {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const child = el.children[active] as HTMLElement | undefined;
-    if (!child) return;
-    isProgrammaticScroll.current = true;
-    el.scrollTo({ left: child.offsetLeft, behavior: 'smooth' });
-    const t = window.setTimeout(() => {
-      isProgrammaticScroll.current = false;
-    }, 500);
-    return () => window.clearTimeout(t);
+    el.scrollTo({ left: el.clientWidth * active, behavior: 'smooth' });
   }, [active]);
 
   const handleTouchStart = () => {
@@ -284,15 +276,19 @@ function PhoneCarousel() {
 
   return (
     <div className="flex flex-col items-center">
+      {/* Break out of parent horizontal padding so each slide is full viewport wide */}
       <div
         ref={containerRef}
         onTouchStart={handleTouchStart}
         onScroll={handleScroll}
-        className="flex w-full snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ scrollBehavior: 'smooth' }}
+        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] flex w-screen max-w-[100vw] snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {slides.map((s) => (
-          <div key={s.key} className="flex w-full shrink-0 snap-center justify-center py-2">
+          <div
+            key={s.key}
+            className="flex shrink-0 snap-center items-center justify-center py-2"
+            style={{ width: '100vw' }}
+          >
             <PhoneFrame>{s.node}</PhoneFrame>
           </div>
         ))}

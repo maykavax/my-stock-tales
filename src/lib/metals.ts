@@ -51,33 +51,32 @@ function parseNumber(v: unknown): number {
 export async function fetchMetalPrices(): Promise<MetalPrices> {
   console.log('[METAL] Fetch başladı:', new Date().toISOString());
   const url = `https://finans.truncgil.com/v4/today.json?_t=${Date.now()}`;
-  const res = await fetch(url, {
-    cache: 'no-store',
-    headers: {
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache',
-    },
-  });
-  if (!res.ok) throw new Error('Truncgil API error');
-  const data = await res.json();
-  console.log('[METAL] Raw response:', JSON.stringify(data).substring(0, 500));
-  const out: MetalPrices = { gold: undefined, silver: undefined, platinum: undefined, palladium: undefined };
-  (Object.keys(TRUNCGIL_KEY) as MetalType[]).forEach((m) => {
-    const node = data?.[TRUNCGIL_KEY[m]];
-    if (node) {
-      out[m] = {
-        price: parseNumber(node.Selling ?? node.selling ?? node.Buying),
-        change: parseNumber(node.Change ?? node.change ?? 0),
-      };
-    }
-  });
-  console.log('[METAL] Parsed values:', {
-    GRA: out.gold,
-    GUMUS: out.silver,
-    GPL: out.platinum,
-    PAL: out.palladium,
-  });
-  return out;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Truncgil API error: ${res.status}`);
+    const data = await res.json();
+    console.log('[METAL] Raw response:', JSON.stringify(data).substring(0, 500));
+    const out: MetalPrices = { gold: undefined, silver: undefined, platinum: undefined, palladium: undefined };
+    (Object.keys(TRUNCGIL_KEY) as MetalType[]).forEach((m) => {
+      const node = data?.[TRUNCGIL_KEY[m]];
+      if (node) {
+        out[m] = {
+          price: parseNumber(node.Selling ?? node.selling ?? node.Buying),
+          change: parseNumber(node.Change ?? node.change ?? 0),
+        };
+      }
+    });
+    console.log('[METAL] Parsed values:', {
+      GRA: out.gold,
+      GUMUS: out.silver,
+      GPL: out.platinum,
+      PAL: out.palladium,
+    });
+    return out;
+  } catch (err) {
+    console.error('[METAL] Fetch failed:', err);
+    throw err;
+  }
 }
 
 export interface MetalGroup {

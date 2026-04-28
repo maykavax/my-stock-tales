@@ -222,91 +222,19 @@ function PhoneShowcase() {
           </PhoneFrame>
         </div>
       </div>
-      {/* Mobile: horizontal carousel */}
-      <div className="sm:hidden">
-        <PhoneCarousel />
+      {/* Mobile: simple vertical stack */}
+      <div className="flex flex-col items-center gap-8 sm:hidden">
+        <PhoneFrame>
+          <PortfolioPhoneScreen />
+        </PhoneFrame>
+        <PhoneFrame>
+          <AnalyticsPhoneScreen />
+        </PhoneFrame>
+        <PhoneFrame>
+          <MetalsPhoneScreen />
+        </PhoneFrame>
       </div>
     </>
-  );
-}
-
-function PhoneCarousel() {
-  const slides = [
-    { key: 'portfolio', node: <PortfolioPhoneScreen /> },
-    { key: 'analytics', node: <AnalyticsPhoneScreen /> },
-    { key: 'metals', node: <MetalsPhoneScreen /> },
-  ];
-  const [active, setActive] = useState(0);
-  const userInteractedRef = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Auto-advance every 4s until user interacts
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      if (userInteractedRef.current) return;
-      setActive((prev) => (prev + 1) % slides.length);
-    }, 4000);
-    return () => window.clearInterval(id);
-  }, [slides.length]);
-
-  // Programmatic scroll when active changes
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    el.scrollTo({ left: el.clientWidth * active, behavior: 'smooth' });
-  }, [active]);
-
-  const handleTouchStart = () => {
-    userInteractedRef.current = true;
-  };
-
-  const handleScroll = () => {
-    const el = containerRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.clientWidth);
-    if (idx !== active && idx >= 0 && idx < slides.length) {
-      setActive(idx);
-    }
-  };
-
-  const goTo = (i: number) => {
-    userInteractedRef.current = true;
-    setActive(i);
-  };
-
-  return (
-    <div className="flex flex-col items-center">
-      {/* Break out of parent horizontal padding so each slide is full viewport wide */}
-      <div
-        ref={containerRef}
-        onTouchStart={handleTouchStart}
-        onScroll={handleScroll}
-        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] flex w-screen max-w-[100vw] snap-x snap-mandatory overflow-x-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {slides.map((s) => (
-          <div
-            key={s.key}
-            className="flex shrink-0 snap-center items-center justify-center py-2"
-            style={{ width: '100vw' }}
-          >
-            <PhoneFrame>{s.node}</PhoneFrame>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 flex items-center gap-2">
-        {slides.map((s, i) => (
-          <button
-            key={s.key}
-            type="button"
-            aria-label={`Slide ${i + 1}`}
-            onClick={() => goTo(i)}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              i === active ? 'w-6 bg-[#A8E40C]' : 'w-2 bg-neutral-600'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
   );
 }
 

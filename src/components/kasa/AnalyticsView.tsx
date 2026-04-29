@@ -118,17 +118,23 @@ export function AnalyticsView({ positions, metalGroups, stockNames, onAddFirst }
     );
   }
 
-  const stockSegments: Segment[] = openStocks
-    .map((p, i) => {
-      const company = formatCompanyName(stockNames?.[p.symbol]);
+  // Group by symbol so the same ticker held at multiple brokers is one slice.
+  const stockBySymbol = new Map<string, number>();
+  for (const p of openStocks) {
+    stockBySymbol.set(p.symbol, (stockBySymbol.get(p.symbol) ?? 0) + p.openValue);
+  }
+  const stockSegments: Segment[] = Array.from(stockBySymbol.entries())
+    .map(([symbol, value]) => ({ symbol, value }))
+    .sort((a, b) => b.value - a.value)
+    .map((s, i) => {
+      const company = formatCompanyName(stockNames?.[s.symbol]);
       return {
-        label: company ? `${p.symbol} · ${company}` : p.symbol,
-        value: p.openValue,
-        pct: stocksValue > 0 ? (p.openValue / stocksValue) * 100 : 0,
+        label: company ? `${s.symbol} · ${company}` : s.symbol,
+        value: s.value,
+        pct: stocksValue > 0 ? (s.value / stocksValue) * 100 : 0,
         color: palette[i % palette.length],
       };
-    })
-    .sort((a, b) => b.value - a.value);
+    });
 
   const metalSegments: Segment[] = openMetals
     .map((g, i) => ({

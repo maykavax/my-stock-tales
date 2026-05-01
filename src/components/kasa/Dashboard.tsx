@@ -308,7 +308,14 @@ export function Dashboard() {
         </div>
 
         <div className="mt-4 pb-24">
-          {tab === 'holdings' && <HoldingsView positions={positions} stockNames={stockNames} onAddFirst={() => setModalOpen(true)} />}
+          {tab === 'holdings' && (
+            <HoldingsView
+              positions={positions}
+              stockNames={stockNames}
+              onAddFirst={() => setModalOpen(true)}
+              stocksDailyChange={stocksDailyChange}
+            />
+          )}
           {tab === 'metals' && (
             <MetalsView
               groups={metalGroups}

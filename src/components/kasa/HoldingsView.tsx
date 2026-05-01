@@ -7,6 +7,7 @@ interface Props {
   positions: Position[];
   stockNames?: Record<string, StockName>;
   onAddFirst: () => void;
+  stocksDailyChange?: number;
 }
 
 interface SymbolGroup {
@@ -47,7 +48,7 @@ function groupBySymbol(positions: Position[]): SymbolGroup[] {
   return groups.sort((a, b) => b.openValue - a.openValue);
 }
 
-export function HoldingsView({ positions, stockNames, onAddFirst }: Props) {
+export function HoldingsView({ positions, stockNames, onAddFirst, stocksDailyChange = 0 }: Props) {
   const open = positions.filter((p) => p.openQty > 0);
   const groups = groupBySymbol(open);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -68,8 +69,19 @@ export function HoldingsView({ positions, stockNames, onAddFirst }: Props) {
     );
   }
 
+  const totalValue = groups.reduce((s, g) => s + g.openValue, 0);
+  const prevTotal = totalValue - stocksDailyChange;
+  const dailyPct = prevTotal > 0 ? (stocksDailyChange / prevTotal) * 100 : 0;
+
   return (
     <div className="space-y-3">
+      <div className="rounded-2xl border border-border bg-kasa-surface p-5">
+        <p className="text-xs text-kasa-text2">Toplam Hisse Değeri</p>
+        <p className="mt-1 font-mono text-3xl font-bold text-foreground"><Mask>{fmt(totalValue)}</Mask> ₺</p>
+        <p className={`mt-1 font-mono text-xs ${stocksDailyChange >= 0 ? 'text-kasa-green' : 'text-kasa-red'}`}>
+          {stocksDailyChange >= 0 ? '▲' : '▼'} <Mask>{fmt(Math.abs(stocksDailyChange))}</Mask> ₺ ({stocksDailyChange >= 0 ? '+' : '-'}{fmt(Math.abs(dailyPct))}%)
+        </p>
+      </div>
       {groups.map((g) => {
         const pnlColor = g.unrealizedPnl >= 0 ? 'text-kasa-green' : 'text-kasa-red';
         const company = formatCompanyName(stockNames?.[g.symbol]);
